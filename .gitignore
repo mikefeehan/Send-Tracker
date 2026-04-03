@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+functions/.env
+*.log
+.DS_Store
+.firebase/
+.claude/

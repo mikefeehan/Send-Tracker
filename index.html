@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍹</text></svg>" />
+
+    <!-- Mobile viewport — lock scale, prevent zoom, notch support -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
+
+    <!-- iOS webapp configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Send Track" />
+    <meta name="apple-mobile-web-app-icons" content="yes" />
+
+    <!-- Android theme color -->
+    <meta name="theme-color" content="#06111a" />
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Prevent pull-to-refresh behavior -->
+    <style>
+      body {
+        overscroll-behavior: none;
+        -webkit-touch-callout: none;
+      }
+    </style>
+
+    <title>Send Tracker</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

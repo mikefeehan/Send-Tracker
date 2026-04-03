@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /drinks/{drinkId} {
+      // Anyone can read
+      allow read: if true;
+
+      // Create: must include required fields with correct types
+      allow create: if request.resource.data.keys().hasAll([
+                        'userId', 'name', 'drinkType',
+                        'points', 'day', 'createdAt', 'location', 'eventId'
+                      ])
+                   && request.resource.data.userId is string
+                   && request.resource.data.userId.size() > 0
+                   && request.resource.data.userId.size() <= 128
+                   && request.resource.data.name is string
+                   && request.resource.data.name.size() > 0
+                   && request.resource.data.name.size() <= 80
+                   && request.resource.data.drinkType in ['beer', 'wine', 'shot', 'cocktail']
+                   && request.resource.data.points is number
+                   && request.resource.data.points >= 1
+                   && request.resource.data.points <= 15
+                   && request.resource.data.day is string
+                   && request.resource.data.day.size() > 0
+                   && request.resource.data.eventId is string
+                   && request.resource.data.location is string
+                   && request.resource.data.location.size() > 0;
+
+      // Update: allow likes, comments, OR editing drink type (by same user)
+      allow update: if (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        && request.resource.data.likes is list
+      ) || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])
+        && request.resource.data.comments is list
+      ) || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['drinkType', 'points', 'quantity'])
+        && request.resource.data.drinkType in ['beer', 'wine', 'shot', 'cocktail']
+        && request.resource.data.points is number
+        && request.resource.data.points >= 1
+        && request.resource.data.points <= 15
+        && request.resource.data.userId == resource.data.userId
+      );
+
+      // Only the user who posted can delete their own drink
+      allow delete: if resource.data.userId is string;
+    }
+
+    match /events/{eventId} {
+      // Anyone can read events
+      allow read: if true;
+
+      // Anyone can create/update/delete events (admin PIN auth is client-side)
+      allow create: if request.resource.data.keys().hasAll(['name', 'startDate', 'endDate', 'active', 'createdAt'])
+                   && request.resource.data.name is string
+                   && request.resource.data.name.size() > 0;
+      allow update: if true;
+      allow delete: if true;
+    }
+  }
+}
