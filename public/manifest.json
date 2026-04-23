@@ -1,22 +1,22 @@
 {
   "name": "Send Tracker",
   "short_name": "Send Track",
-  "description": "Track. Compete. Send It. — The universal drink tracking competition app.",
+  "description": "A social drink logging app for friends 21+. Share moments, track your nights out responsibly.",
   "start_url": "/",
   "display": "standalone",
   "scope": "/",
-  "background_color": "#06111a",
-  "theme_color": "#f43f5e",
+  "background_color": "#050914",
+  "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23f43f5e;stop-opacity:1' /><stop offset='100%' style='stop-color:%23a855f7;stop-opacity:1' /></linearGradient></defs><rect width='192' height='192' fill='%2306111a'/><g transform='translate(96,96)'><circle cx='0' cy='0' r='70' fill='url(%23grad)' opacity='0.9'/><text y='30' font-size='80' text-anchor='middle' fill='white' dominant-baseline='middle'>🍹</text></g></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><defs><linearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%233b82f6;stop-opacity:1' /><stop offset='100%25' style='stop-color:%237c3aed;stop-opacity:1' /></linearGradient></defs><rect width='192' height='192' fill='%23050914'/><g transform='translate(96,96)'><circle cx='0' cy='0' r='70' fill='url(%23grad)' opacity='0.9'/><text y='30' font-size='80' text-anchor='middle' fill='white' dominant-baseline='middle'>🍻</text></g></svg>",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='grad2' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23f43f5e;stop-opacity:1' /><stop offset='100%' style='stop-color:%23a855f7;stop-opacity:1' /></linearGradient></defs><rect width='512' height='512' fill='%2306111a'/><g transform='translate(256,256)'><circle cx='0' cy='0' r='180' fill='url(%23grad2)' opacity='0.9'/><text y='80' font-size='200' text-anchor='middle' fill='white' dominant-baseline='middle'>🍹</text></g></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='grad2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%233b82f6;stop-opacity:1' /><stop offset='100%25' style='stop-color:%237c3aed;stop-opacity:1' /></linearGradient></defs><rect width='512' height='512' fill='%23050914'/><g transform='translate(256,256)'><circle cx='0' cy='0' r='180' fill='url(%23grad2)' opacity='0.9'/><text y='80' font-size='200' text-anchor='middle' fill='white' dominant-baseline='middle'>🍻</text></g></svg>",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
@@ -25,7 +25,7 @@
   "categories": ["lifestyle", "social"],
   "screenshots": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><defs><linearGradient id='grad3' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23f43f5e;stop-opacity:1' /><stop offset='100%' style='stop-color:%23a855f7;stop-opacity:1' /></linearGradient></defs><rect fill='%23061118' width='540' height='720'/><g transform='translate(270,360)'><circle cx='0' cy='0' r='120' fill='url(%23grad3)' opacity='0.85'/><text y='35' font-size='140' text-anchor='middle' fill='white' dominant-baseline='middle'>🍹</text></g></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><defs><linearGradient id='grad3' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%233b82f6;stop-opacity:1' /><stop offset='100%25' style='stop-color:%237c3aed;stop-opacity:1' /></linearGradient></defs><rect fill='%23050914' width='540' height='720'/><g transform='translate(270,360)'><circle cx='0' cy='0' r='120' fill='url(%23grad3)' opacity='0.85'/><text y='35' font-size='140' text-anchor='middle' fill='white' dominant-baseline='middle'>🍻</text></g></svg>",
       "sizes": "540x720",
       "type": "image/svg+xml",
       "form_factor": "narrow"

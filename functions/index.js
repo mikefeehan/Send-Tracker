@@ -1,8 +1,16 @@
 const { onRequest } = require('firebase-functions/v2/https')
 const Anthropic = require('@anthropic-ai/sdk').default
+const admin = require('firebase-admin')
+
+// Initialize admin SDK once
+if (!admin.apps.length) admin.initializeApp()
 
 // Firebase Functions 2nd gen natively loads functions/.env — no dotenv needed
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || ''
+
+// Rate limit settings
+const MIN_SECONDS_BETWEEN = 90            // 1.5 min between drinks
+const MAX_DRINKS_PER_HOUR = 5
 
 exports.checkDrinkPhoto = onRequest({
   cors: true,
@@ -20,6 +28,61 @@ exports.checkDrinkPhoto = onRequest({
 
     if (!imageBase64 || !mediaType) {
       return res.status(400).json({ error: 'Missing image data' })
+    }
+
+    // ── Auth check: verify Firebase ID token from Authorization header ──
+    const authHeader = req.headers.authorization || ''
+    const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+    let uid = null
+    if (idToken) {
+      try {
+        const decoded = await admin.auth().verifyIdToken(idToken)
+        uid = decoded.uid
+      } catch (e) {
+        // Invalid/expired token — treat as unauthenticated and continue
+        // (we still run AI verification; rate limiting just can't enforce)
+        console.warn('ID token verification failed:', e.message)
+      }
+    }
+
+    // ── Server-side rate limiting (only when we know who you are) ──
+    if (uid) {
+      try {
+        const db = admin.firestore()
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+        const snap = await db.collection('drinks')
+          .where('userId', '==', uid)
+          .where('createdAt', '>=', oneHourAgo)
+          .get()
+
+        if (snap.size >= MAX_DRINKS_PER_HOUR) {
+          return res.json({
+            approved: false,
+            reason: `Max ${MAX_DRINKS_PER_HOUR} drinks per hour. Pace yourself!`,
+          })
+        }
+
+        // Check time since most recent drink
+        let mostRecentMs = 0
+        snap.forEach(doc => {
+          const ts = doc.data().createdAt
+          const ms = ts?.toMillis ? ts.toMillis() : 0
+          if (ms > mostRecentMs) mostRecentMs = ms
+        })
+
+        const secondsSince = (Date.now() - mostRecentMs) / 1000
+        if (mostRecentMs > 0 && secondsSince < MIN_SECONDS_BETWEEN) {
+          const wait = Math.ceil(MIN_SECONDS_BETWEEN - secondsSince)
+          return res.json({
+            approved: false,
+            reason: `Slow down! Wait ${wait}s between drinks.`,
+          })
+        }
+      } catch (rateLimitErr) {
+        console.error('Rate limit check failed:', rateLimitErr)
+        // If rate-limit check fails, don't block the user
+      }
     }
 
     const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
@@ -85,9 +148,6 @@ Respond with ONLY valid JSON:
   } catch (err) {
     console.error('Photo check error:', err)
     // On API error (no credits etc), still allow through so app works
-    if (err.message && err.message.includes('credit')) {
-      return res.json({ approved: true, reason: 'Verification temporarily unavailable' })
-    }
     return res.json({ approved: true, reason: 'Verification temporarily unavailable' })
   }
 })

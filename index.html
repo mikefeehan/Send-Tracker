@@ -2,7 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍹</text></svg>" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍻</text></svg>" />
+
+    <!-- Apple Touch Icon (used by iOS for Add to Home Screen) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%233b82f6'/><stop offset='100%25' style='stop-color:%237c3aed'/></linearGradient></defs><rect width='192' height='192' rx='42' fill='%23050914'/><g transform='translate(96,96)'><circle cx='0' cy='0' r='70' fill='url(%23g)' opacity='0.9'/><text y='30' font-size='80' text-anchor='middle' dominant-baseline='middle'>🍻</text></g></svg>" />
+    <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%233b82f6'/><stop offset='100%25' style='stop-color:%237c3aed'/></linearGradient></defs><rect width='192' height='192' rx='42' fill='%23050914'/><g transform='translate(96,96)'><circle cx='0' cy='0' r='70' fill='url(%23g)' opacity='0.9'/><text y='30' font-size='80' text-anchor='middle' dominant-baseline='middle'>🍻</text></g></svg>" />
 
     <!-- Mobile viewport — lock scale, prevent zoom, notch support -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
@@ -14,10 +18,10 @@
     <meta name="apple-mobile-web-app-icons" content="yes" />
 
     <!-- Android theme color -->
-    <meta name="theme-color" content="#06111a" />
+    <meta name="theme-color" content="#050914" />
 
-    <!-- PWA manifest -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- PWA manifest (cache-busted) -->
+    <link rel="manifest" href="/manifest.json?v=2" />
 
     <!-- Prevent pull-to-refresh behavior -->
     <style>

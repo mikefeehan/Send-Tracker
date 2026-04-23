@@ -1,18 +1,39 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /drinks/{drinkId} {
-      // Anyone can read
-      allow read: if true;
 
-      // Create: must include required fields with correct types
-      allow create: if request.resource.data.keys().hasAll([
+    // User profile docs
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+                           && request.auth.uid == userId
+                           && request.resource.data.userId == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Username reservations — one doc per unique lowercased username
+    match /usernames/{username} {
+      allow read: if request.auth != null;
+      // Anyone authed can claim an unused username. Doc ID = lowercased username.
+      // The client must set userId to their own uid.
+      allow create: if request.auth != null
+                   && request.resource.data.userId == request.auth.uid;
+      // Only the owner can delete their own reservation (used when changing username)
+      allow delete: if request.auth != null
+                   && resource.data.userId == request.auth.uid;
+    }
+
+    match /drinks/{drinkId} {
+      // Anyone signed in can read
+      allow read: if request.auth != null;
+
+      // Create: must be authenticated, userId must match auth uid
+      allow create: if request.auth != null
+                   && request.auth.uid == request.resource.data.userId
+                   && request.resource.data.keys().hasAll([
                         'userId', 'name', 'drinkType',
-                        'points', 'day', 'createdAt', 'location', 'eventId'
+                        'points', 'day', 'createdAt', 'location'
                       ])
-                   && request.resource.data.userId is string
-                   && request.resource.data.userId.size() > 0
-                   && request.resource.data.userId.size() <= 128
                    && request.resource.data.name is string
                    && request.resource.data.name.size() > 0
                    && request.resource.data.name.size() <= 80
@@ -22,40 +43,66 @@ service cloud.firestore {
                    && request.resource.data.points <= 15
                    && request.resource.data.day is string
                    && request.resource.data.day.size() > 0
-                   && request.resource.data.eventId is string
                    && request.resource.data.location is string
                    && request.resource.data.location.size() > 0;
 
-      // Update: allow likes, comments, OR editing drink type (by same user)
-      allow update: if (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
-        && request.resource.data.likes is list
-      ) || (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])
-        && request.resource.data.comments is list
-      ) || (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['drinkType', 'points', 'quantity'])
-        && request.resource.data.drinkType in ['beer', 'wine', 'shot', 'cocktail']
-        && request.resource.data.points is number
-        && request.resource.data.points >= 1
-        && request.resource.data.points <= 15
-        && request.resource.data.userId == resource.data.userId
+      // Update: allow likes, comments (any authed user), or edits by owner
+      allow update: if request.auth != null && (
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+          && request.resource.data.likes is list
+        ) || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])
+          && request.resource.data.comments is list
+        ) || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['drinkType', 'points', 'quantity'])
+          && request.resource.data.drinkType in ['beer', 'wine', 'shot', 'cocktail']
+          && request.resource.data.points is number
+          && request.resource.data.points >= 1
+          && request.resource.data.points <= 15
+          && request.auth.uid == resource.data.userId
+        )
       );
 
       // Only the user who posted can delete their own drink
-      allow delete: if resource.data.userId is string;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
     match /events/{eventId} {
-      // Anyone can read events
-      allow read: if true;
+      // Anyone signed in can read
+      allow read: if request.auth != null;
 
-      // Anyone can create/update/delete events (admin PIN auth is client-side)
-      allow create: if request.resource.data.keys().hasAll(['name', 'startDate', 'endDate', 'active', 'createdAt'])
-                   && request.resource.data.name is string
-                   && request.resource.data.name.size() > 0;
-      allow update: if true;
-      allow delete: if true;
+      // Any signed-in user can manage events (admin PIN auth is client-side)
+      allow create, update, delete: if request.auth != null;
+    }
+
+    match /friendships/{friendshipId} {
+      // Read: only if current user is one of the two parties
+      allow read: if request.auth != null
+                 && request.auth.uid in resource.data.users;
+
+      // Create: authed user sending a request
+      //  - must include self in users array
+      //  - requestedBy must be self
+      //  - status must start as 'pending'
+      //  - users array must have exactly 2 uids
+      allow create: if request.auth != null
+                   && request.auth.uid in request.resource.data.users
+                   && request.resource.data.requestedBy == request.auth.uid
+                   && request.resource.data.status == 'pending'
+                   && request.resource.data.users.size() == 2;
+
+      // Update: only to accept a pending request, and only by the OTHER user
+      //  (the one who didn't send it)
+      allow update: if request.auth != null
+                   && request.auth.uid in resource.data.users
+                   && resource.data.status == 'pending'
+                   && request.resource.data.status == 'accepted'
+                   && request.auth.uid != resource.data.requestedBy;
+
+      // Delete: either party can delete (decline, cancel, or unfriend)
+      allow delete: if request.auth != null
+                   && request.auth.uid in resource.data.users;
     }
   }
 }

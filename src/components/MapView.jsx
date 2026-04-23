@@ -31,7 +31,7 @@ function createProfileMarker(drink) {
         border-radius:50%;
         border:2.5px solid white;
         overflow:hidden;
-        background:linear-gradient(135deg,#f43f5e,#a855f7);
+        background:linear-gradient(135deg,#3b82f6,#7c3aed);
         display:flex;align-items:center;justify-content:center;
         flex-shrink:0;
       ">

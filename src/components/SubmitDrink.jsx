@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '../firebase'
+import { db, storage, auth } from '../firebase'
+import { compressImage } from '../utils/compressImage'
 
 // Rate limiting — track submission timestamps in localStorage
 function getSubmitHistory() {
@@ -30,7 +31,7 @@ function checkRateLimit() {
 
 const DRINK_TYPES = [
   { value: 'beer', label: '🍺 Beer/Seltzer/Wine', points: 1.5 },
-  { value: 'cocktail', label: '🍹 Cocktail', points: 2 },
+  { value: 'cocktail', label: '🍸 Cocktail', points: 2 },
   { value: 'shot', label: '🥃 Shot', points: 2.5 },
 ]
 
@@ -93,24 +94,27 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
     )
   }
 
-  function handlePhotoChange(e) {
+  async function handlePhotoChange(e) {
     const file = e.target.files[0]
     if (!file) return
     if (!file.type.startsWith('image/')) { setError('File must be an image.'); return }
-    if (file.size > 10 * 1024 * 1024) { setError('Photo must be under 10MB.'); return }
+    if (file.size > 20 * 1024 * 1024) { setError('Photo must be under 20MB.'); return }
     setError('')
-    setPhoto(file)
+
+    // Compress before storing (max 1600px, JPEG 0.85)
+    const compressed = await compressImage(file, { maxDimension: 1600, quality: 0.85 })
+    setPhoto(compressed)
+
     const reader = new FileReader()
     reader.onload = (ev) => setPhotoPreview(ev.target.result)
     reader.onerror = () => setError('Could not read photo. Try another.')
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(compressed)
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!photo) { setError('Photo is required!'); return }
     if (!location.trim()) { setError('Please enter a location!'); return }
-    if (!activeEvent) { setError('No active event! Ask an admin to create one.'); return }
     if (cooldown) return
 
     // Rate limit check
@@ -123,6 +127,13 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
     try {
       // AI Photo Verification — send to Claude Vision
       const selected = DRINK_TYPES.find(d => d.value === drinkType)
+
+      if (!navigator.onLine) {
+        setError('📡 You appear to be offline. Connect to the internet to submit.')
+        setSubmitting(false)
+        return
+      }
+
       try {
         const reader = new FileReader()
         const base64 = await new Promise((resolve, reject) => {
@@ -130,24 +141,42 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
           reader.onerror = reject
           reader.readAsDataURL(photo)
         })
+
+        // Get Firebase ID token for server-side auth + rate limiting
+        let idToken = ''
+        try {
+          idToken = (await auth.currentUser?.getIdToken()) || ''
+        } catch { /* ignore, fall through unauthenticated */ }
+
         const checkRes = await fetch('/api/checkPhoto', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+          },
           body: JSON.stringify({
             imageBase64: base64,
             mediaType: photo.type || 'image/jpeg',
             drinkType: selected.label,
           }),
         })
+
+        if (!checkRes.ok) {
+          throw new Error(`Verification server returned ${checkRes.status}`)
+        }
+
         const check = await checkRes.json()
         if (!check.approved) {
-          setError(`🚫 Photo rejected: ${check.reason}`)
+          setError(`🚫 ${check.reason || 'Photo could not be verified'}`)
           setSubmitting(false)
           return
         }
       } catch (verifyErr) {
-        console.warn('Photo verification unavailable, proceeding:', verifyErr)
-        // If verification fails (network etc), allow through
+        console.warn('Photo verification unavailable:', verifyErr)
+        // Network/server error — inform the user but don't silently approve
+        setError('⚠️ Could not reach verification service. Check your connection and try again.')
+        setSubmitting(false)
+        return
       }
 
       const imageRef = ref(storage, `drinks/${user.userId}_${Date.now()}`)
@@ -165,7 +194,7 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
         description: description.trim(),
         location: location.trim(),
         day: getTodayStr(),
-        eventId: activeEvent.id,
+        eventId: activeEvent?.id || '',
         likes: [],
         comments: [],
         createdAt: serverTimestamp(),
@@ -208,7 +237,7 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
       {/* Photo upload */}
       <div
         onClick={() => !submitting && fileInputRef.current?.click()}
-        className="relative w-full aspect-video bg-slate-800 rounded-xl border-2 border-dashed border-slate-600 flex items-center justify-center cursor-pointer overflow-hidden hover:border-pink-500 transition-colors"
+        className="relative w-full aspect-video bg-slate-800 rounded-xl border-2 border-dashed border-slate-600 flex items-center justify-center cursor-pointer overflow-hidden hover:border-blue-500 transition-colors"
       >
         {photoPreview ? (
           <img src={photoPreview} alt="preview" className="w-full h-full object-cover" />
@@ -243,12 +272,12 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
             onClick={() => setDrinkType(type.value)}
             className={`py-3 rounded-xl text-sm font-semibold transition-all ${
               drinkType === type.value
-                ? 'bg-pink-600 text-white shadow-lg shadow-pink-600/30'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
             <div>{type.label}</div>
-            <div className={`text-xs mt-0.5 ${drinkType === type.value ? 'text-pink-200' : 'text-slate-500'}`}>
+            <div className={`text-xs mt-0.5 ${drinkType === type.value ? 'text-blue-200' : 'text-slate-500'}`}>
               {type.points} pt{type.points !== 1 ? 's' : ''}
             </div>
           </button>
@@ -266,8 +295,8 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
               onClick={() => setQuantity(n)}
               className={`w-11 h-11 rounded-full text-sm font-bold transition-all ${
                 quantity === n
-                  ? 'bg-pink-600 text-white shadow-lg shadow-pink-600/30'
-                  : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-pink-500'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                  : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500'
               }`}
             >
               {n}
@@ -285,7 +314,7 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
           type="button"
           onClick={detectLocation}
           disabled={locationStatus === 'loading'}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all bg-slate-800 text-slate-300 border border-slate-700 hover:border-pink-500 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500 disabled:opacity-50"
         >
           {locationStatus === 'loading' ? '⏳ Locating...' : '📍 Auto-Detect Location'}
         </button>
@@ -295,7 +324,7 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
           onChange={e => setLocation(e.target.value)}
           placeholder="Or type your location"
           maxLength={80}
-          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 transition-colors"
+          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
         />
       </div>
 
@@ -306,7 +335,7 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
         onChange={e => setDescription(e.target.value)}
         placeholder="Caption (optional)"
         maxLength={120}
-        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 transition-colors"
+        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
       />
 
       {error && <p className="text-red-400 text-sm text-center">{error}</p>}
@@ -314,14 +343,14 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
 
       <button
         type="submit"
-        disabled={submitting || cooldown || !photo || !activeEvent}
+        disabled={submitting || cooldown || !photo}
         className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-          submitting || cooldown || !photo || !activeEvent
+          submitting || cooldown || !photo
             ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-            : 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-lg shadow-pink-600/30 active:scale-95'
+            : 'bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-lg shadow-blue-600/30 active:scale-95'
         }`}
       >
-        {submitting ? '⏳ Sending...' : cooldown ? '✅ Sent! Wait...' : !activeEvent ? '⚠️ No Active Event' : '🍹 Log This Send'}
+        {submitting ? '⏳ Sending...' : cooldown ? '✅ Sent! Wait...' : '🍻 Submit Drink'}
       </button>
     </form>
   )

@@ -1,15 +1,65 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { DEMO_DRINKS } from './demoData'
-import { collection, onSnapshot, query, orderBy, limit, where, getDocs } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from './firebase'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { collection, onSnapshot, query, orderBy, limit, where, doc, getDoc, setDoc, deleteDoc, getDocs, updateDoc, writeBatch } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import {
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  deleteUser,
+} from 'firebase/auth'
+import { db, storage, auth, googleProvider } from './firebase'
 import Leaderboard from './components/Leaderboard'
 import SubmitDrink from './components/SubmitDrink'
 import Feed from './components/Feed'
 import UserProfile from './components/UserProfile'
 import RecapModal from './components/RecapModal'
-import MapView from './components/MapView'
+const MapView = lazy(() => import('./components/MapView'))
 import AdminPanel from './components/AdminPanel'
+import AgeGate, { isAgeVerified } from './components/AgeGate'
+import { PrivacyPolicy, TermsOfService } from './components/LegalPages'
+import FriendsModal from './components/FriendsModal'
+import { getAcceptedFriendUids, getIncomingRequests } from './utils/friends'
+import { normalizeUsername, validateUsername, claimUsername, releaseUsername, isUsernameAvailable } from './utils/username'
+import { compressImage } from './utils/compressImage'
+
+// ─── Skeleton loaders ────────────────────────────────────────────────────────
+function SkeletonBlock({ className = '', style = {} }) {
+  return <div className={`animate-pulse rounded-xl ${className}`} style={{ background: 'rgba(255,255,255,0.05)', ...style }} />
+}
+
+function AppBootSkeleton() {
+  return (
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #050914 0%, #0a1224 40%, #0f1a2e 70%, #050914 100%)' }}>
+      <div className="max-w-lg mx-auto px-5 pt-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <SkeletonBlock className="h-4 w-32" />
+            <SkeletonBlock className="h-3 w-20" />
+          </div>
+          <div className="flex gap-2">
+            <SkeletonBlock className="h-8 w-8 rounded-full" />
+            <SkeletonBlock className="h-8 w-8 rounded-full" />
+            <SkeletonBlock className="h-8 w-8 rounded-full" />
+          </div>
+        </div>
+        <SkeletonBlock className="h-20 w-full" />
+        <SkeletonBlock className="h-10 w-full" />
+        <SkeletonBlock className="h-10 w-full" />
+        <div className="space-y-2">
+          <SkeletonBlock className="h-16 w-full" />
+          <SkeletonBlock className="h-16 w-full" />
+          <SkeletonBlock className="h-16 w-full" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MapSkeleton() {
+  return <SkeletonBlock className="w-full" style={{ height: '420px', borderRadius: '16px' }} />
+}
 
 function getTodayStr() {
   return new Date().toLocaleDateString('en-CA') // YYYY-MM-DD in local timezone
@@ -21,53 +71,192 @@ function formatDayLabel(dateStr) {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-// ─── User identity stored in localStorage ────────────────────────────────────
-function loadUser() {
-  try {
-    const raw = localStorage.getItem('mst_user')
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
+// ─── Login screen (Google + Email/Password) ───────────────────────────────────
+function LoginScreen() {
+  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function handleGoogle() {
+    setErr('')
+    setBusy(true)
+    try {
+      await signInWithPopup(auth, googleProvider)
+    } catch (e) {
+      setErr(e.message.replace('Firebase: ', ''))
+    }
+    setBusy(false)
   }
+
+  async function handleEmail(e) {
+    e.preventDefault()
+    setErr('')
+    setBusy(true)
+    try {
+      if (mode === 'signin') {
+        await signInWithEmailAndPassword(auth, email, password)
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password)
+      }
+    } catch (e) {
+      setErr(e.message.replace('Firebase: ', ''))
+    }
+    setBusy(false)
+  }
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #050914 0%, #0a1224 40%, #0f1a2e 70%, #050914 100%)' }}>
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-7">
+          <div className="text-5xl mb-2">🍻</div>
+          <h1 className="text-3xl font-black text-white tracking-tight">Send Tracker</h1>
+          <p className="text-slate-400 text-sm mt-1.5 font-medium">Track. Compete. Send It.</p>
+        </div>
+
+        <div className="rounded-2xl p-6 space-y-4" style={{ background: 'rgba(10,18,34,0.85)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 60px rgba(0,0,0,0.5)' }}>
+          {/* Google Sign In */}
+          <button
+            onClick={handleGoogle}
+            disabled={busy}
+            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-slate-900 bg-white hover:bg-slate-100 active:scale-95 transition-all disabled:opacity-50"
+          >
+            <svg width="20" height="20" viewBox="0 0 48 48">
+              <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+              <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+              <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+              <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-slate-500 font-semibold">OR</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
+          {/* Email form */}
+          <form onSubmit={handleEmail} className="space-y-3">
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="Email"
+              required
+              className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Password"
+              required
+              minLength={6}
+              className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            {err && <p className="text-red-400 text-xs text-center">{err}</p>}
+            <button
+              type="submit"
+              disabled={busy || !email || !password}
+              className="btn-cta w-full py-3 font-bold text-white disabled:opacity-40"
+            >
+              {busy ? '...' : (mode === 'signin' ? 'Sign In' : 'Create Account')}
+            </button>
+          </form>
+
+          <button
+            onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setErr('') }}
+            className="w-full text-center text-sm text-slate-400 hover:text-white transition-colors"
+          >
+            {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+            <span className="text-blue-400 font-semibold">{mode === 'signin' ? 'Sign up' : 'Sign in'}</span>
+          </button>
+        </div>
+
+        <div className="flex items-center justify-center gap-4 text-[11px] text-slate-600 mt-5">
+          <a href="#privacy" className="hover:text-slate-400 transition-colors">Privacy Policy</a>
+          <span>·</span>
+          <a href="#terms" className="hover:text-slate-400 transition-colors">Terms of Service</a>
+        </div>
+        <p className="text-[10px] text-slate-700 text-center mt-2">21+ only. Please drink responsibly.</p>
+      </div>
+    </div>
+  )
 }
 
-function saveUser(user) {
-  localStorage.setItem('mst_user', JSON.stringify(user))
-}
-
-function generateId() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36)
-}
-
-// ─── Onboarding modal ─────────────────────────────────────────────────────────
-function OnboardingModal({ onDone }) {
-  const [name, setName] = useState('')
-  const [photoPreview, setPhotoPreview] = useState(null)
+// ─── Profile setup modal (name + photo for new users) ────────────────────────
+function ProfileSetupModal({ authUser, onDone }) {
+  const [name, setName] = useState(authUser.displayName || '')
+  const [username, setUsername] = useState('')
+  const [photoPreview, setPhotoPreview] = useState(authUser.photoURL || null)
   const [photoData, setPhotoData] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [usernameStatus, setUsernameStatus] = useState('') // 'checking' | 'available' | 'taken' | ''
   const fileRef = useRef(null)
 
-  function handlePhoto(e) {
+  // Debounced username availability check
+  useEffect(() => {
+    setErr('')
+    const u = normalizeUsername(username)
+    if (!u) { setUsernameStatus(''); return }
+    const validationErr = validateUsername(u)
+    if (validationErr) { setUsernameStatus(''); return }
+    setUsernameStatus('checking')
+    const timer = setTimeout(async () => {
+      try {
+        const ok = await isUsernameAvailable(u)
+        setUsernameStatus(ok ? 'available' : 'taken')
+      } catch {
+        setUsernameStatus('')
+      }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [username])
+
+  async function handlePhoto(e) {
     const file = e.target.files[0]
     if (!file) return
+    const compressed = await compressImage(file, { maxDimension: 600, quality: 0.85 })
     const reader = new FileReader()
     reader.onload = ev => {
       setPhotoPreview(ev.target.result)
       setPhotoData(ev.target.result)
     }
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(compressed)
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
+    setErr('')
     if (!name.trim()) return
-    const userId = generateId()
-    let profilePhotoUrl = ''
 
-    // Upload profile photo to Storage (not base64)
+    const normalizedUsername = normalizeUsername(username)
+    const usernameErr = validateUsername(normalizedUsername)
+    if (usernameErr) {
+      setErr(usernameErr)
+      return
+    }
+
+    setBusy(true)
+
+    // 1. Claim the username first (atomic uniqueness)
+    try {
+      await claimUsername(normalizedUsername, authUser.uid)
+    } catch (e) {
+      setErr(e.message)
+      setBusy(false)
+      return
+    }
+
+    // 2. Upload photo
+    let profilePhotoUrl = authUser.photoURL || ''
     if (photoData) {
       try {
         const blob = await fetch(photoData).then(r => r.blob())
-        const photoRef = ref(storage, `profiles/${userId}`)
+        const photoRef = ref(storage, `profiles/${authUser.uid}`)
         await uploadBytes(photoRef, blob)
         profilePhotoUrl = await getDownloadURL(photoRef)
       } catch (err) {
@@ -75,26 +264,37 @@ function OnboardingModal({ onDone }) {
       }
     }
 
-    const user = {
-      userId,
+    // 3. Save user profile with username
+    const profile = {
+      userId: authUser.uid,
       name: name.trim(),
+      username: normalizedUsername,
       profilePhoto: profilePhotoUrl,
+      email: authUser.email || '',
+      createdAt: Date.now(),
     }
-    saveUser(user)
-    onDone(user)
+    try {
+      await setDoc(doc(db, 'users', authUser.uid), profile)
+      onDone(profile)
+    } catch (err) {
+      console.error('Profile save failed:', err)
+      // Rollback username reservation on failure
+      await releaseUsername(normalizedUsername)
+      setErr('Could not save profile. Try again.')
+      setBusy(false)
+    }
   }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm">
+      <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm">
         <div className="text-center mb-6">
-          <div className="text-5xl mb-2">🍹</div>
-          <h1 className="text-2xl font-black text-white">Send Tracker</h1>
-          <p className="text-slate-400 text-sm mt-1">Track. Compete. Send It.</p>
+          <div className="text-4xl mb-2">🍻</div>
+          <h1 className="text-2xl font-black text-white">Complete Your Profile</h1>
+          <p className="text-slate-400 text-sm mt-1">Almost there</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Avatar picker */}
           <div className="flex justify-center">
             <button
               type="button"
@@ -102,47 +302,64 @@ function OnboardingModal({ onDone }) {
               className="relative"
             >
               {photoPreview ? (
-                <img
-                  src={photoPreview}
-                  alt="profile"
-                  className="w-20 h-20 rounded-full object-cover border-4 border-pink-500"
-                />
+                <img src={photoPreview} alt="profile" className="w-20 h-20 rounded-full object-cover border-4 border-blue-500" />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-slate-700 border-4 border-slate-600 flex items-center justify-center text-3xl hover:border-pink-500 transition-colors">
+                <div className="w-20 h-20 rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center text-3xl hover:border-blue-500 transition-colors">
                   👤
                 </div>
               )}
-              <div className="absolute -bottom-1 -right-1 bg-pink-600 rounded-full w-6 h-6 flex items-center justify-center text-white text-xs">
-                +
-              </div>
+              <div className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-white text-xs">+</div>
             </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              onChange={handlePhoto}
-              className="hidden"
-            />
+            <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
           </div>
           <p className="text-center text-xs text-slate-500">Profile photo (optional)</p>
 
-          {/* Name */}
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder="Your name"
+            placeholder="Display name"
             required
             autoFocus
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 transition-colors"
+            maxLength={40}
+            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
           />
+
+          <div>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold pointer-events-none">@</span>
+              <input
+                type="text"
+                value={username}
+                onChange={e => setUsername(normalizeUsername(e.target.value))}
+                placeholder="username"
+                required
+                maxLength={20}
+                autoCapitalize="none"
+                autoCorrect="off"
+                className="w-full bg-slate-800 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+              {usernameStatus === 'checking' && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">...</span>
+              )}
+              {usernameStatus === 'available' && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-400">✓</span>
+              )}
+              {usernameStatus === 'taken' && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-red-400">✗ taken</span>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1 ml-1">3-20 chars · letters, numbers, . _</p>
+          </div>
+
+          {err && <p className="text-red-400 text-xs text-center">{err}</p>}
 
           <button
             type="submit"
-            disabled={!name.trim()}
-            className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all shadow-lg shadow-pink-600/30"
+            disabled={!name.trim() || !username.trim() || usernameStatus === 'taken' || usernameStatus === 'checking' || busy}
+            className="btn-cta w-full py-3 font-bold text-white disabled:opacity-40"
           >
-            Let's Go 🎉
+            {busy ? 'Saving...' : "Let's Go 🚀"}
           </button>
         </form>
       </div>
@@ -153,26 +370,76 @@ function OnboardingModal({ onDone }) {
 // ─── Edit Profile Modal ───────────────────────────────────────────────────
 function EditProfileModal({ user, onSave, onClose }) {
   const [name, setName] = useState(user.name)
+  const [username, setUsername] = useState(user.username || '')
   const [photoPreview, setPhotoPreview] = useState(user.profilePhoto)
   const [photoData, setPhotoData] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteErr, setDeleteErr] = useState('')
+  const [saveErr, setSaveErr] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [usernameStatus, setUsernameStatus] = useState('')
   const fileRef = useRef(null)
 
-  function handlePhoto(e) {
+  // Debounced username availability check (only when changed from original)
+  useEffect(() => {
+    setSaveErr('')
+    const u = normalizeUsername(username)
+    if (!u || u === (user.username || '')) { setUsernameStatus(''); return }
+    const validationErr = validateUsername(u)
+    if (validationErr) { setUsernameStatus(''); return }
+    setUsernameStatus('checking')
+    const timer = setTimeout(async () => {
+      try {
+        const ok = await isUsernameAvailable(u)
+        setUsernameStatus(ok ? 'available' : 'taken')
+      } catch {
+        setUsernameStatus('')
+      }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [username, user.username])
+
+  async function handlePhoto(e) {
     const file = e.target.files[0]
     if (!file) return
+    const compressed = await compressImage(file, { maxDimension: 600, quality: 0.85 })
     const reader = new FileReader()
     reader.onload = ev => {
       setPhotoPreview(ev.target.result)
       setPhotoData(ev.target.result)
     }
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(compressed)
   }
 
   async function handleSave() {
+    setSaveErr('')
     if (!name.trim()) return
+
+    const newUsername = normalizeUsername(username)
+    const oldUsername = user.username || ''
+    const changedUsername = newUsername !== oldUsername
+
+    if (changedUsername) {
+      const err = validateUsername(newUsername)
+      if (err) { setSaveErr(err); return }
+    }
+
+    setSaving(true)
+
+    // If username changed, claim new one first
+    if (changedUsername) {
+      try {
+        await claimUsername(newUsername, user.userId)
+      } catch (e) {
+        setSaveErr(e.message)
+        setSaving(false)
+        return
+      }
+    }
+
     let profilePhotoUrl = user.profilePhoto
 
-    // Upload new photo to Storage if changed
     if (photoData) {
       try {
         const blob = await fetch(photoData).then(r => r.blob())
@@ -184,26 +451,104 @@ function EditProfileModal({ user, onSave, onClose }) {
       }
     }
 
-    const updated = { ...user, name: name.trim(), profilePhoto: profilePhotoUrl }
-    onSave(updated)
+    const updated = { ...user, name: name.trim(), username: newUsername, profilePhoto: profilePhotoUrl }
+    const nameChanged = updated.name !== user.name
+    const photoChanged = updated.profilePhoto !== user.profilePhoto
+
+    try {
+      await setDoc(doc(db, 'users', user.userId), updated, { merge: true })
+
+      // Sync name/photo across all existing drink docs
+      if (nameChanged || photoChanged) {
+        try {
+          const drinksSnap = await getDocs(query(collection(db, 'drinks'), where('userId', '==', user.userId)))
+          const batch = writeBatch(db)
+          drinksSnap.forEach(d => {
+            const updates = {}
+            if (nameChanged) updates.name = updated.name
+            if (photoChanged) updates.profilePhoto = updated.profilePhoto
+            batch.update(doc(db, 'drinks', d.id), updates)
+          })
+          await batch.commit()
+        } catch (syncErr) {
+          console.warn('Drink profile sync failed (non-critical):', syncErr)
+        }
+      }
+
+      // Release old username after successful save
+      if (changedUsername && oldUsername) {
+        await releaseUsername(oldUsername)
+      }
+      onSave(updated)
+    } catch (err) {
+      console.error('Profile save failed:', err)
+      // Roll back new username claim on failure
+      if (changedUsername) {
+        await releaseUsername(newUsername)
+      }
+      setSaveErr('Could not save profile. Try again.')
+      setSaving(false)
+    }
+  }
+
+  async function handleSignOut() {
+    await signOut(auth)
+    onClose()
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteErr('')
+    setDeleting(true)
+    try {
+      // 1. Delete all drinks by this user
+      const drinksSnap = await getDocs(collection(db, 'drinks'))
+      for (const d of drinksSnap.docs) {
+        if (d.data().userId === user.userId) {
+          await deleteDoc(doc(db, 'drinks', d.id))
+        }
+      }
+
+      // 2. Delete profile photo from storage (best-effort)
+      try {
+        await deleteObject(ref(storage, `profiles/${user.userId}`))
+      } catch (e) { /* ignore — may not exist */ }
+
+      // 3. Release username reservation
+      if (user.username) {
+        await releaseUsername(user.username)
+      }
+
+      // 4. Delete user profile doc
+      await deleteDoc(doc(db, 'users', user.userId))
+
+      // 4. Delete auth account (must be recently signed-in)
+      await deleteUser(auth.currentUser)
+
+      // onAuthStateChanged will kick the user back to login
+      onClose()
+    } catch (err) {
+      console.error('Delete account error:', err)
+      if (err.code === 'auth/requires-recent-login') {
+        setDeleteErr('For security, please sign out and sign back in, then try again.')
+      } else {
+        setDeleteErr(err.message || 'Could not delete account. Please try again.')
+      }
+      setDeleting(false)
+    }
   }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm">
+      <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm">
         <h2 className="text-xl font-black text-white mb-4">Edit Profile</h2>
 
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="relative mx-auto block mb-4"
-        >
+        <button type="button" onClick={() => fileRef.current?.click()} className="relative mx-auto block mb-4">
           {photoPreview ? (
-            <img src={photoPreview} alt="profile" className="w-20 h-20 rounded-full object-cover border-4 border-pink-500" />
+            <img src={photoPreview} alt="profile" className="w-20 h-20 rounded-full object-cover border-4 border-blue-500" />
           ) : (
-            <div className="w-20 h-20 rounded-full bg-slate-700 border-4 border-slate-600 flex items-center justify-center text-3xl hover:border-pink-500 transition-colors">👤</div>
+            <div className="w-20 h-20 rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center text-3xl hover:border-blue-500 transition-colors">👤</div>
           )}
-          <div className="absolute -bottom-1 -right-1 bg-pink-600 rounded-full w-6 h-6 flex items-center justify-center text-white text-xs">+</div>
+          <div className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-white text-xs">+</div>
         </button>
         <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
 
@@ -211,25 +556,191 @@ function EditProfileModal({ user, onSave, onClose }) {
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
-          placeholder="Your name"
-          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 transition-colors mb-4"
+          placeholder="Display name"
+          maxLength={40}
+          className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors mb-3"
         />
 
-        <div className="flex gap-2">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2 rounded-xl font-semibold text-slate-400 bg-slate-800 hover:bg-slate-700 transition-all"
-          >
+        <div className="mb-3">
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold pointer-events-none">@</span>
+            <input
+              type="text"
+              value={username}
+              onChange={e => setUsername(normalizeUsername(e.target.value))}
+              placeholder="username"
+              maxLength={20}
+              autoCapitalize="none"
+              autoCorrect="off"
+              className="w-full bg-slate-800 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            {usernameStatus === 'checking' && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">...</span>
+            )}
+            {usernameStatus === 'available' && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-400">✓</span>
+            )}
+            {usernameStatus === 'taken' && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-red-400">✗ taken</span>
+            )}
+          </div>
+        </div>
+
+        {saveErr && <p className="text-red-400 text-xs text-center mb-2">{saveErr}</p>}
+
+        <div className="flex gap-2 mb-3">
+          <button onClick={onClose} className="flex-1 py-2 rounded-xl font-semibold text-slate-400 bg-slate-800 hover:bg-slate-700 transition-all">
             Cancel
           </button>
           <button
             onClick={handleSave}
-            disabled={!name.trim()}
-            className="flex-1 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-pink-600 to-purple-600 disabled:opacity-40 active:scale-95 transition-all"
+            disabled={!name.trim() || !username.trim() || usernameStatus === 'taken' || usernameStatus === 'checking' || saving}
+            className="flex-1 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-violet-600 disabled:opacity-40 active:scale-95 transition-all"
           >
-            Save
+            {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
+
+        <button onClick={handleSignOut} className="w-full py-2 text-xs text-slate-500 hover:text-white transition-colors">
+          Sign Out
+        </button>
+
+        <div className="mt-4 pt-4 border-t border-white/5">
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="w-full py-2 text-xs text-slate-600 hover:text-red-400 transition-colors"
+            >
+              Delete Account
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-red-400 text-center font-semibold">
+                This permanently deletes your account, profile, and all drinks. Cannot be undone.
+              </p>
+              {deleteErr && <p className="text-xs text-red-400 text-center">{deleteErr}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setConfirmDelete(false); setDeleteErr('') }}
+                  disabled={deleting}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-all"
+                >
+                  {deleting ? 'Deleting...' : 'Delete Forever'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-center gap-4 text-[10px] text-slate-600">
+          <a href="#privacy" className="hover:text-slate-400 transition-colors">Privacy Policy</a>
+          <span>·</span>
+          <a href="#terms" className="hover:text-slate-400 transition-colors">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Username Setup Modal (for existing users missing a username) ────────────
+function UsernameSetupModal({ user, onDone }) {
+  const [username, setUsername] = useState('')
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [usernameStatus, setUsernameStatus] = useState('')
+
+  useEffect(() => {
+    setErr('')
+    const u = normalizeUsername(username)
+    if (!u) { setUsernameStatus(''); return }
+    const validationErr = validateUsername(u)
+    if (validationErr) { setUsernameStatus(''); return }
+    setUsernameStatus('checking')
+    const timer = setTimeout(async () => {
+      try {
+        const ok = await isUsernameAvailable(u)
+        setUsernameStatus(ok ? 'available' : 'taken')
+      } catch {
+        setUsernameStatus('')
+      }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [username])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setErr('')
+    const u = normalizeUsername(username)
+    const validationErr = validateUsername(u)
+    if (validationErr) { setErr(validationErr); return }
+
+    setBusy(true)
+    try {
+      await claimUsername(u, user.userId)
+      const updated = { ...user, username: u }
+      await setDoc(doc(db, 'users', user.userId), updated, { merge: true })
+      onDone(updated)
+    } catch (e) {
+      setErr(e.message)
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm">
+        <div className="text-center mb-5">
+          <div className="text-4xl mb-2">✨</div>
+          <h1 className="text-2xl font-black text-white">Pick a Username</h1>
+          <p className="text-slate-400 text-sm mt-1.5">We added usernames — grab yours before someone else does</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold pointer-events-none">@</span>
+              <input
+                type="text"
+                value={username}
+                onChange={e => setUsername(normalizeUsername(e.target.value))}
+                placeholder="username"
+                required
+                autoFocus
+                maxLength={20}
+                autoCapitalize="none"
+                autoCorrect="off"
+                className="w-full bg-slate-800 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+              {usernameStatus === 'checking' && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">...</span>
+              )}
+              {usernameStatus === 'available' && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-400">✓</span>
+              )}
+              {usernameStatus === 'taken' && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-red-400">✗ taken</span>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1 ml-1">3-20 chars · letters, numbers, . _</p>
+          </div>
+
+          {err && <p className="text-red-400 text-xs text-center">{err}</p>}
+
+          <button
+            type="submit"
+            disabled={!username.trim() || usernameStatus === 'taken' || usernameStatus === 'checking' || busy}
+            className="btn-cta w-full py-3 font-bold text-white disabled:opacity-40"
+          >
+            {busy ? 'Saving...' : 'Claim It'}
+          </button>
+        </form>
       </div>
     </div>
   )
@@ -257,35 +768,31 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
       <div
         className="relative w-full max-w-lg rounded-t-3xl overflow-hidden"
         style={{
-          background: 'rgba(7,16,31,0.96)',
+          background: 'rgba(7,14,28,0.96)',
           backdropFilter: 'blur(32px)',
           borderTop: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 -8px 48px rgba(244,63,94,0.12)',
+          boxShadow: '0 -8px 48px rgba(59,130,246,0.12)',
         }}
       >
-        {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
         </div>
 
         <div className="px-6 pt-3 pb-8 space-y-5">
-          {/* Icon + headline */}
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg,#f43f5e,#a855f7)', boxShadow: '0 0 28px rgba(244,63,94,0.5)' }}>
-              🍹
+              style={{ background: 'linear-gradient(135deg,#3b82f6,#7c3aed)', boxShadow: '0 0 28px rgba(59,130,246,0.5)' }}>
+              🍻
             </div>
             <div>
-              {/* Pink-gradient headline — makes the action unmissable */}
               <h2 className="text-xl font-black leading-tight"
-                style={{ background: 'linear-gradient(90deg,#f43f5e,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                style={{ background: 'linear-gradient(90deg,#3b82f6,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 Add to Home Screen
               </h2>
               <p className="text-slate-400 text-sm mt-0.5">One tap to open — no App Store needed</p>
             </div>
           </div>
 
-          {/* Benefits */}
           <div className="space-y-2.5">
             {[
               ['⚡', 'Instant access', 'Opens full-screen, no browser chrome'],
@@ -303,18 +810,16 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
             ))}
           </div>
 
-          {/* Important note */}
           <div className="rounded-2xl px-4 py-3 text-center"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <p className="text-xs text-slate-400">💡 <span className="text-slate-300">After adding to home screen, open the app from your home screen and create your account there. Use only the home screen app going forward.</span></p>
+            <p className="text-xs text-slate-400">💡 <span className="text-slate-300">After adding to home screen, open the app from your home screen and sign in there. Use only the home screen app going forward.</span></p>
           </div>
 
-          {/* Steps or install button */}
           {isIOS ? (
             <>
               <div className="rounded-2xl px-4 py-4 space-y-3"
-                style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)' }}>
-                <p className="text-xs font-bold text-pink-400 uppercase tracking-widest">How to add on iPhone</p>
+                style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)' }}>
+                <p className="text-xs font-bold text-blue-400 uppercase tracking-widest">How to add on iPhone</p>
                 {[
                   ['1', 'Tap the', 'Share', 'button at the bottom'],
                   ['2', 'Scroll down and tap', '"View More"', ''],
@@ -322,10 +827,10 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
                 ].map(([n, pre, bold, post]) => (
                   <div key={n} className="flex items-start gap-3">
                     <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0 mt-0.5"
-                      style={{ background: 'linear-gradient(135deg,#f43f5e,#a855f7)' }}>{n}</div>
+                      style={{ background: 'linear-gradient(135deg,#3b82f6,#7c3aed)' }}>{n}</div>
                     <p className="text-sm text-slate-300">
                       {pre}{' '}
-                      <span style={{ background: 'linear-gradient(90deg,#f43f5e,#c026d3)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>
+                      <span style={{ background: 'linear-gradient(90deg,#3b82f6,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>
                         {bold}
                       </span>
                       {post ? ' ' + post : ''}
@@ -333,7 +838,6 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
                   </div>
                 ))}
               </div>
-              {/* Primary confirm — opens the app after adding */}
               <button onClick={onDismiss} className="btn-cta w-full py-4 font-bold text-white text-base text-center">
                 ✅ &nbsp;Done! I've added it
               </button>
@@ -352,12 +856,11 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
             </>
           ) : (
             <>
-              {/* Fallback: show the instruction prominently */}
               <div className="rounded-2xl px-5 py-4 text-center space-y-2"
-                style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)' }}>
+                style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)' }}>
                 <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Open your browser menu and tap</p>
                 <p className="text-xl font-black"
-                  style={{ background: 'linear-gradient(90deg,#f43f5e,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  style={{ background: 'linear-gradient(90deg,#3b82f6,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                   "Add to Home Screen"
                 </p>
                 <p className="text-xs text-slate-500">Then tap <span className="text-slate-300 font-semibold">"Add"</span> to confirm 🎉</p>
@@ -404,18 +907,16 @@ function Winners({ drinks: rawDrinks, activeEvent }) {
   const champ = overallChamp()
   if (!champ) return null
 
-  // Get unique event days from drinks, sorted chronologically
   const eventDays = [...new Set(drinks.map(d => d.day))].sort()
   const todayStr = getTodayStr()
 
   return (
     <div className="space-y-3">
-      {/* Hero — Current Overall Leader */}
       <div className="card-hero px-5 py-4">
         <div className="flex items-center gap-3">
           <div>
             <div className="text-[11px] font-semibold text-amber-400/80 uppercase tracking-widest mb-0.5">
-              {activeEvent ? activeEvent.name + ' Leader' : 'Overall Leader'}
+              {activeEvent ? activeEvent.name + ' Leader' : 'All-Time Leader'}
             </div>
             <div className="text-xl font-black text-white">{champ.name}</div>
           </div>
@@ -429,7 +930,6 @@ function Winners({ drinks: rawDrinks, activeEvent }) {
         </div>
       </div>
 
-      {/* Daily winner cards — scrollable row */}
       {eventDays.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
           {eventDays.map(dayStr => {
@@ -448,7 +948,7 @@ function Winners({ drinks: rawDrinks, activeEvent }) {
                 ) : winner ? (
                   <>
                     <div className="text-base font-bold text-white truncate leading-tight">{winner.name}</div>
-                    <div className="text-sm text-rose-400 font-semibold mt-0.5">{winner.points} pts</div>
+                    <div className="text-sm text-blue-400 font-semibold mt-0.5">{winner.points} pts</div>
                   </>
                 ) : (
                   <div className="text-sm text-slate-700 py-1">—</div>
@@ -464,25 +964,38 @@ function Winners({ drinks: rawDrinks, activeEvent }) {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
-  const [user, setUser] = useState(loadUser)
-  const [drinks, setDrinks] = useState(DEMO_MODE ? DEMO_DRINKS : [])
+  const [hash, setHash] = useState(() => window.location.hash)
+  const [ageVerified, setAgeVerified] = useState(() => isAgeVerified())
+  const [authUser, setAuthUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [user, setUser] = useState(null) // Firestore profile doc
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [drinks, setDrinks] = useState([])
   const [activeEvent, setActiveEvent] = useState(null)
+
+  // Hash-based routing for legal pages
+  useEffect(() => {
+    const handler = () => setHash(window.location.hash)
+    window.addEventListener('hashchange', handler)
+    return () => window.removeEventListener('hashchange', handler)
+  }, [])
   const [selectedFilter, setSelectedFilter] = useState('today')
+  const [scope, setScope] = useState('global') // 'friends' | 'global'
   const [activeTab, setActiveTab] = useState('leaderboard')
-  const [selectedUser, setSelectedUser] = useState(null)
+  const [selectedProfile, setSelectedProfile] = useState(null) // full user doc
   const [showRecap, setShowRecap] = useState(false)
   const [showInstall, setShowInstall] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
+  const [showFriends, setShowFriends] = useState(false)
+  const [allUsers, setAllUsers] = useState([])
+  const [friendships, setFriendships] = useState([])
   const [toast, setToast] = useState('')
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const submitRef = useRef(null)
   const prevLikesRef = useRef({})
   const userRef = useRef(null)
 
-  // Set document meta tags for mobile
   useEffect(() => {
-    // Ensure manifest link exists
     let manifest = document.querySelector('link[rel="manifest"]')
     if (!manifest) {
       manifest = document.createElement('link')
@@ -492,7 +1005,6 @@ export default function App() {
     }
   }, [])
 
-  // Capture the native install prompt (Android/Chrome)
   useEffect(() => {
     function handler(e) {
       e.preventDefault()
@@ -502,8 +1014,35 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
+  // Listen to auth state
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (fbUser) => {
+      setAuthUser(fbUser)
+      setAuthLoading(false)
+      if (fbUser) {
+        // Load or create Firestore profile doc
+        setProfileLoading(true)
+        try {
+          const snap = await getDoc(doc(db, 'users', fbUser.uid))
+          if (snap.exists()) {
+            setUser(snap.data())
+          } else {
+            setUser(null) // Triggers profile setup modal
+          }
+        } catch (err) {
+          console.error('Profile load failed:', err)
+        }
+        setProfileLoading(false)
+      } else {
+        setUser(null)
+      }
+    })
+    return unsub
+  }, [])
+
   // Load active event from Firestore
   useEffect(() => {
+    if (!authUser) return
     const q = query(collection(db, 'events'), where('active', '==', true), limit(1))
     const unsub = onSnapshot(q, snap => {
       if (snap.docs.length > 0) {
@@ -513,11 +1052,11 @@ export default function App() {
       }
     })
     return unsub
-  }, [])
+  }, [authUser])
 
-  // Real-time Firestore listener + like notifications
+  // Real-time drinks listener + like notifications
   useEffect(() => {
-    // Request notification permission early
+    if (!authUser) return
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
@@ -525,9 +1064,8 @@ export default function App() {
     const q = query(collection(db, 'drinks'), orderBy('createdAt', 'desc'), limit(200))
     const unsub = onSnapshot(q, snap => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      setDrinks(data.length > 0 ? data : (DEMO_MODE ? DEMO_DRINKS : []))
+      setDrinks(data)
 
-      // Like notifications
       const currentUser = userRef.current
       if (currentUser && Notification.permission === 'granted') {
         data.forEach(drink => {
@@ -545,7 +1083,6 @@ export default function App() {
         })
       }
 
-      // Update previous likes snapshot
       const newSnapshot = {}
       data.forEach(d => { newSnapshot[d.id] = d.likes || [] })
       prevLikesRef.current = newSnapshot
@@ -553,15 +1090,32 @@ export default function App() {
       console.error('Firestore error:', err)
     })
     return unsub
-  }, [])
+  }, [authUser])
 
-  // Keep userRef in sync for notification closure
   useEffect(() => { userRef.current = user }, [user])
 
-  // Filter drinks to active event
-  const eventDrinks = activeEvent
-    ? drinks.filter(d => d.eventId === activeEvent.id)
-    : drinks
+  // Listen to all users (for search, name resolution)
+  useEffect(() => {
+    if (!authUser) return
+    const unsub = onSnapshot(collection(db, 'users'), snap => {
+      setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    }, err => console.error('Users listener error:', err))
+    return unsub
+  }, [authUser])
+
+  // Listen to friendships involving current user
+  useEffect(() => {
+    if (!authUser) return
+    const q = query(collection(db, 'friendships'), where('users', 'array-contains', authUser.uid))
+    const unsub = onSnapshot(q, snap => {
+      setFriendships(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    }, err => console.error('Friendships listener error:', err))
+    return unsub
+  }, [authUser])
+
+  // Legal pages (hash routing) — accessible without auth
+  if (hash === '#privacy') return <PrivacyPolicy />
+  if (hash === '#terms') return <TermsOfService />
 
   // Admin panel — access via ?admin in URL
   const isAdmin = new URLSearchParams(window.location.search).has('admin')
@@ -569,19 +1123,69 @@ export default function App() {
     return <AdminPanel drinks={drinks} activeEvent={activeEvent} />
   }
 
-  if (!user) {
+  // Auth loading
+  if (authLoading) {
+    return <AppBootSkeleton />
+  }
+
+  // Not signed in
+  if (!authUser) {
+    return <LoginScreen />
+  }
+
+  // Signed in but no profile yet
+  if (!user && !profileLoading) {
     return (
-      <OnboardingModal onDone={newUser => {
-        setUser(newUser)
-        // Show install prompt once after first onboarding
-        if (!localStorage.getItem('mst_install_shown')) {
-          setTimeout(() => setShowInstall(true), 600)
-        }
-      }} />
+      <ProfileSetupModal
+        authUser={authUser}
+        onDone={newUser => {
+          setUser(newUser)
+          if (!localStorage.getItem('st_install_shown')) {
+            setTimeout(() => setShowInstall(true), 600)
+          }
+        }}
+      />
     )
   }
 
-  const todayStr = getTodayStr()
+  if (profileLoading || !user) {
+    return <AppBootSkeleton />
+  }
+
+  // Age gate — after sign-up/sign-in, before entering the app
+  // Stored on the Firestore user doc so it persists across devices/cache clears
+  if (!user.ageVerified && !ageVerified) {
+    return <AgeGate onVerified={async () => {
+      setAgeVerified(true)
+      try {
+        await setDoc(doc(db, 'users', user.userId), { ageVerified: true }, { merge: true })
+        setUser(prev => ({ ...prev, ageVerified: true }))
+      } catch (e) {
+        console.error('Failed to save age verification:', e)
+      }
+    }} />
+  }
+
+  // Existing users without a username — prompt them to pick one
+  if (!user.username) {
+    return <UsernameSetupModal user={user} onDone={(updated) => setUser(updated)} />
+  }
+
+  // If an event is active, filter to that event's drinks; otherwise show all drinks
+  let eventDrinks = activeEvent
+    ? drinks.filter(d => d.eventId === activeEvent.id)
+    : drinks.filter(d => d.userId !== 'ADMIN')
+
+  // Apply friends scope filter: only self + accepted friends
+  const friendUids = getAcceptedFriendUids(user.userId, friendships)
+  const hasFriends = friendUids.length > 0
+  const effectiveScope = hasFriends ? scope : 'global'
+  if (effectiveScope === 'friends') {
+    const allowed = new Set([user.userId, ...friendUids])
+    eventDrinks = eventDrinks.filter(d => allowed.has(d.userId))
+  }
+
+  const pendingRequestCount = getIncomingRequests(user.userId, friendships).length
 
   return (
     <>
@@ -589,10 +1193,9 @@ export default function App() {
       className="ambient-bg min-h-screen pb-36"
       style={{
         position: 'relative',
-        background: 'linear-gradient(135deg, #06111a 0%, #0a1628 40%, #111827 70%, #06111a 100%)',
+        background: 'linear-gradient(135deg, #050914 0%, #0a1224 40%, #0f1a2e 70%, #050914 100%)',
       }}
     >
-      {/* ── Dark overlay for readability ── */}
       <div style={{
         position: 'fixed',
         inset: 0,
@@ -601,37 +1204,47 @@ export default function App() {
         background: 'rgba(0,0,0,0.12)',
       }} />
 
-      {/* Accent glow blob drifting through center */}
       <div className="glow-blob glow-blob-blue" />
-      {/* ── Header (with safe area support for notched phones) ── */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.10]" style={{ background: 'rgba(4,8,16,0.94)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', paddingTop: 'max(0px, env(safe-area-inset-top))' }}>
+
+      <header className="sticky top-0 z-40 border-b border-white/[0.08]" style={{ background: 'rgba(3,7,18,0.94)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', paddingTop: 'max(0px, env(safe-area-inset-top))' }}>
         <div className="max-w-lg mx-auto px-5 py-3.5 flex items-center justify-between">
           <div>
-            <h1 className="text-[17px] font-black text-white leading-none tracking-tight">🍹 Send Tracker</h1>
+            <h1 className="text-[17px] font-black text-white leading-none tracking-tight">🍻 Send Tracker</h1>
             <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
               Hey, {user.name}!
               {(() => {
                 const pts = eventDrinks.filter(d => d.userId === user.userId).reduce((sum, d) => sum + (d.points || 0), 0)
-                return pts > 0 ? <span className="ml-1.5 text-pink-400 font-bold">⚡ {pts} pts</span> : null
+                return pts > 0 ? <span className="ml-1.5 text-blue-400 font-bold">⚡ {pts} pts</span> : null
               })()}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setShowFriends(true)}
+              aria-label="Friends"
+              className="relative text-[12px] font-semibold text-white px-3 py-1.5 rounded-full transition-all active:scale-95"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}
+            >
+              👥
+              {pendingRequestCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{pendingRequestCount}</span>
+              )}
+            </button>
             <button
               onClick={() => setShowRecap(true)}
               aria-label="View recap stats"
-              className="text-[12px] font-semibold text-white px-3.5 py-1.5 rounded-full transition-all active:scale-95"
-              style={{ background: 'linear-gradient(135deg,rgba(244,63,94,0.25),rgba(168,85,247,0.25))', border: '1px solid rgba(244,63,94,0.3)' }}
+              className="text-[12px] font-semibold text-white px-3 py-1.5 rounded-full transition-all active:scale-95"
+              style={{ background: 'linear-gradient(135deg,rgba(59,130,246,0.25),rgba(124,58,237,0.25))', border: '1px solid rgba(59,130,246,0.3)' }}
             >
-              📊 Recap
+              📊
             </button>
             <button
               onClick={() => setShowEditProfile(true)}
               aria-label="Edit profile"
-              className="text-[12px] font-semibold text-white px-3.5 py-1.5 rounded-full transition-all active:scale-95"
+              className="text-[12px] font-semibold text-white px-3 py-1.5 rounded-full transition-all active:scale-95"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}
             >
-              ✏️ Edit
+              ✏️
             </button>
           </div>
         </div>
@@ -639,10 +1252,9 @@ export default function App() {
 
       <div className="max-w-lg mx-auto pt-5 pb-4 space-y-5" style={{ paddingLeft: 'max(16px, env(safe-area-inset-left))', paddingRight: 'max(16px, env(safe-area-inset-right))' }}>
 
-        {/* ── Event banner ── */}
         {activeEvent && (
           <div className="card px-4 py-2.5 flex items-center gap-2">
-            <span className="text-lg">🎉</span>
+            <span className="text-lg">🎯</span>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold text-white truncate">{activeEvent.name}</div>
               <div className="text-xs text-slate-400">
@@ -652,18 +1264,27 @@ export default function App() {
           </div>
         )}
 
-        {!activeEvent && (
-          <div className="card px-4 py-3 text-center">
-            <p className="text-sm text-slate-400">No active event. Ask an admin to create one!</p>
+        <Winners drinks={eventDrinks} activeEvent={activeEvent} />
+
+        {/* Scope toggle: Global / Friends — only show once the user has friends */}
+        {hasFriends && (
+          <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl" style={{ background: 'rgba(10,18,34,0.6)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            {[['global', '🌐 Global'], ['friends', `👥 Friends`]].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setScope(key)}
+                className={`py-2 text-xs font-semibold transition-all duration-200 ${
+                  scope === key ? 'seg-active' : 'seg-inactive'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         )}
 
-        {/* ── Winners ── */}
-        <Winners drinks={eventDrinks} activeEvent={activeEvent} />
-
-        {/* ── Day toggle ── */}
-        <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.05)' }}>
-          {['today', 'event'].map(filter => (
+        <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl" style={{ background: 'rgba(10,18,34,0.6)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          {['today', 'all'].map(filter => (
             <button
               key={filter}
               onClick={() => setSelectedFilter(filter)}
@@ -671,13 +1292,12 @@ export default function App() {
                 selectedFilter === filter ? 'seg-active' : 'seg-inactive'
               }`}
             >
-              {filter === 'today' ? '📅 Today' : '🏆 Full Event'}
+              {filter === 'today' ? '📅 Today' : (activeEvent ? '🏆 Full Event' : '🏆 All Time')}
             </button>
           ))}
         </div>
 
-        {/* ── Tab nav ── */}
-        <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl" style={{ background: 'rgba(10,18,34,0.6)', border: '1px solid rgba(255,255,255,0.05)' }}>
           {[['leaderboard','🏆','Board'], ['feed','📸','Feed'], ['map','🗺️','Map']].map(([tab, icon, label]) => (
             <button
               key={tab}
@@ -691,29 +1311,35 @@ export default function App() {
           ))}
         </div>
 
-        {/* ── Content ── */}
         {activeTab === 'leaderboard' && (
-          <Leaderboard drinks={eventDrinks} selectedFilter={selectedFilter} onUserClick={setSelectedUser} />
+          <Leaderboard drinks={eventDrinks} selectedFilter={selectedFilter} onUserClick={(uid) => {
+            const profile = allUsers.find(u => u.userId === uid)
+            if (profile) setSelectedProfile(profile)
+          }} />
         )}
         {activeTab === 'feed' && (
           <Feed drinks={eventDrinks} user={user} />
         )}
         {activeTab === 'map' && (
-          <MapView drinks={eventDrinks} />
+          <Suspense fallback={<MapSkeleton />}>
+            <MapView drinks={eventDrinks} />
+          </Suspense>
         )}
       </div>
 
-      {/* ── Sticky submit bar (with safe area support for notched phones) ── */}
       <div
         ref={submitRef}
         className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/[0.05]"
-        style={{ background: 'rgba(7,16,31,0.96)', backdropFilter: 'blur(24px)', paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+        style={{ background: 'rgba(5,10,22,0.96)', backdropFilter: 'blur(24px)', paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-lg mx-auto px-4 py-3">
           <details className="group" id="drink-form">
             <summary className="list-none cursor-pointer">
-              <div className="btn-cta w-full py-4 font-bold text-white text-base text-center select-none">
-                🍹 &nbsp;Log a Drink
+              <div className="btn-cta w-full py-4 font-bold text-white text-base text-center select-none summary-open-hide">
+                🍻 &nbsp;Log a Drink
+              </div>
+              <div className="summary-open-show items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-slate-300" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                ✕ Close
               </div>
             </summary>
             <div className="mt-4 pb-2">
@@ -729,13 +1355,12 @@ export default function App() {
       </div>
     </div>
 
-    {/* ── Modals rendered OUTSIDE the filtered div so z-index works ── */}
     {showInstall && (
       <InstallPrompt
         deferredPrompt={deferredPrompt}
         onDismiss={() => {
           setShowInstall(false)
-          localStorage.setItem('mst_install_shown', '1')
+          localStorage.setItem('st_install_shown', '1')
         }}
       />
     )}
@@ -744,21 +1369,40 @@ export default function App() {
       <RecapModal filter={selectedFilter} drinks={eventDrinks} onClose={() => setShowRecap(false)} />
     )}
 
-    {selectedUser && (
+    {selectedProfile && (
       <UserProfile
-        userId={selectedUser}
-        drinks={eventDrinks}
-        onClose={() => setSelectedUser(null)}
+        profile={selectedProfile}
+        currentUser={user}
+        drinks={drinks}
+        friendships={friendships}
+        onClose={() => setSelectedProfile(null)}
+      />
+    )}
+
+    {showFriends && (
+      <FriendsModal
+        currentUser={user}
+        allUsers={allUsers}
+        friendships={friendships}
+        onClose={() => setShowFriends(false)}
+        onOpenProfile={(profile) => {
+          setShowFriends(false)
+          setSelectedProfile(profile)
+        }}
       />
     )}
 
     {showEditProfile && (
-      <EditProfileModal user={user} onSave={(updated) => { saveUser(updated); setUser(updated); setShowEditProfile(false); }} onClose={() => setShowEditProfile(false)} />
+      <EditProfileModal
+        user={user}
+        onSave={(updated) => { setUser(updated); setShowEditProfile(false); }}
+        onClose={() => setShowEditProfile(false)}
+      />
     )}
 
     {toast && (
       <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl text-white font-bold text-sm shadow-xl animate-bounce"
-        style={{ background: 'linear-gradient(135deg,#f43f5e,#a855f7)', boxShadow: '0 8px 32px rgba(244,63,94,0.4)' }}>
+        style={{ background: 'linear-gradient(135deg,#3b82f6,#7c3aed)', boxShadow: '0 8px 32px rgba(59,130,246,0.4)' }}>
         {toast}
       </div>
     )}

@@ -18,12 +18,12 @@ class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div style={{ minHeight: '100vh', background: '#06111a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#f0f4f8', fontFamily: 'sans-serif', padding: '24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🍹</div>
+          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🍻</div>
           <h1 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Something went wrong</h1>
           <p style={{ color: '#7a8fa6', marginBottom: '20px' }}>Pull down to refresh or tap below to try again.</p>
           <button
             onClick={() => window.location.reload()}
-            style={{ background: 'linear-gradient(135deg,#f43f5e,#a855f7)', color: 'white', border: 'none', borderRadius: '12px', padding: '12px 28px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}
+            style={{ background: 'linear-gradient(135deg,#3b82f6,#7c3aed)', color: 'white', border: 'none', borderRadius: '12px', padding: '12px 28px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}
           >
             Reload App
           </button>

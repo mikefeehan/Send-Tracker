@@ -1,4 +1,4 @@
-const DRINK_EMOJI = { beer: '🍺', wine: '🍺', shot: '🥃', cocktail: '🍹' }
+const DRINK_EMOJI = { beer: '🍺', wine: '🍺', shot: '🥃', cocktail: '🍸' }
 const DRINK_LABEL = { beer: 'Beer/Seltzer/Wine', wine: 'Beer/Seltzer/Wine', shot: 'Shot', cocktail: 'Cocktail' }
 
 function getTodayStr() {
@@ -85,7 +85,7 @@ export default function RecapModal({ filter, drinks: rawDrinks, onClose }) {
               <div className="text-xs text-slate-400 mt-0.5">Drinks</div>
             </div>
             <div className="bg-slate-800 rounded-xl p-3 text-center">
-              <div className="text-3xl font-black text-pink-400">{totalPoints}</div>
+              <div className="text-3xl font-black text-blue-400">{totalPoints}</div>
               <div className="text-xs text-slate-400 mt-0.5">Total pts</div>
             </div>
             <div className="bg-slate-800 rounded-xl p-3 text-center">
@@ -134,10 +134,10 @@ export default function RecapModal({ filter, drinks: rawDrinks, onClose }) {
 
           {/* Most liked */}
           {mostLiked && mostLiked.likes?.length > 0 && (
-            <div className="bg-pink-600/10 border border-pink-600/20 rounded-xl overflow-hidden">
+            <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl overflow-hidden">
               <img src={mostLiked.imageUrl} alt="most liked" className="w-full aspect-video object-cover" />
               <div className="p-3">
-                <div className="text-xs text-pink-400 font-semibold">MOST LIKED ❤️ {mostLiked.likes.length}</div>
+                <div className="text-xs text-blue-400 font-semibold">MOST LIKED ❤️ {mostLiked.likes.length}</div>
                 <div className="text-sm font-bold text-white mt-0.5">{mostLiked.name}</div>
                 {mostLiked.description && <p className="text-xs text-slate-400 mt-0.5">{mostLiked.description}</p>}
               </div>
@@ -152,7 +152,7 @@ export default function RecapModal({ filter, drinks: rawDrinks, onClose }) {
                 <div key={u.name} className="flex items-center gap-3 bg-slate-800 rounded-xl px-3 py-2">
                   <span className="text-sm font-bold text-slate-400 w-5">#{i + 1}</span>
                   <span className="flex-1 text-sm font-semibold text-white">{u.name}</span>
-                  <span className="text-sm font-black text-pink-400">{u.points} pts</span>
+                  <span className="text-sm font-black text-blue-400">{u.points} pts</span>
                 </div>
               ))}
             </div>
