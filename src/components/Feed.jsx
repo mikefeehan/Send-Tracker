@@ -21,7 +21,7 @@ const DRINK_TYPES = [
   { value: 'shot', label: '🥃 Shot', points: 2.5 },
 ]
 
-function DrinkCard({ drink, user }) {
+function DrinkCard({ drink, user, onImageClick }) {
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [posting, setPosting] = useState(false)
@@ -95,12 +95,13 @@ function DrinkCard({ drink, user }) {
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(10,15,25,0.65)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.45)' }}>
-      {/* Image */}
+      {/* Image — tappable to open detail */}
       <img
         src={drink.imageUrl}
         alt={`${drink.name}'s drink`}
-        className="w-full aspect-video object-cover"
+        className="w-full aspect-video object-cover cursor-pointer active:opacity-90 transition-opacity"
         loading="lazy"
+        onClick={() => onImageClick?.(drink)}
         onError={e => { e.target.style.display = 'none' }}
       />
 
@@ -292,7 +293,7 @@ function DrinkCard({ drink, user }) {
   )
 }
 
-export default function Feed({ drinks, user }) {
+export default function Feed({ drinks, user, onDrinkClick }) {
   // Sort newest first
   const sorted = [...drinks].sort((a, b) => {
     const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0
@@ -313,7 +314,7 @@ export default function Feed({ drinks, user }) {
   return (
     <div className="space-y-4">
       {sorted.map(drink => (
-        <DrinkCard key={drink.id} drink={drink} user={user} />
+        <DrinkCard key={drink.id} drink={drink} user={user} onImageClick={onDrinkClick} />
       ))}
     </div>
   )

@@ -20,6 +20,8 @@ import AdminPanel from './components/AdminPanel'
 import AgeGate, { isAgeVerified } from './components/AgeGate'
 import { PrivacyPolicy, TermsOfService } from './components/LegalPages'
 import FriendsModal from './components/FriendsModal'
+import DrinkDetail from './components/DrinkDetail'
+import NotificationFeed, { getNotifications } from './components/NotificationFeed'
 import { getAcceptedFriendUids, getIncomingRequests } from './utils/friends'
 import { normalizeUsername, validateUsername, claimUsername, releaseUsername, isUsernameAvailable } from './utils/username'
 import { compressImage } from './utils/compressImage'
@@ -971,6 +973,8 @@ export default function App() {
   const [showInstall, setShowInstall] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [showFriends, setShowFriends] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [selectedDrink, setSelectedDrink] = useState(null)
   const [allUsers, setAllUsers] = useState([])
   const [friendships, setFriendships] = useState([])
   const [toast, setToast] = useState('')
@@ -1178,6 +1182,8 @@ export default function App() {
   }
 
   const pendingRequestCount = getIncomingRequests(user.userId, friendships).length
+  const notifications = getNotifications(user.userId, drinks, allUsers)
+  const notifCount = notifications.length
 
   return (
     <>
@@ -1220,6 +1226,17 @@ export default function App() {
               👥
               {pendingRequestCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{pendingRequestCount}</span>
+              )}
+            </button>
+            <button
+              onClick={() => setShowNotifications(true)}
+              aria-label="Notifications"
+              className="relative text-[12px] font-semibold text-white px-3 py-1.5 rounded-full transition-all active:scale-95"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}
+            >
+              🔔
+              {notifCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{notifCount > 9 ? '9+' : notifCount}</span>
               )}
             </button>
             <button
@@ -1293,7 +1310,7 @@ export default function App() {
           }} />
         )}
         {activeTab === 'feed' && (
-          <Feed drinks={eventDrinks} user={user} />
+          <Feed drinks={eventDrinks} user={user} onDrinkClick={setSelectedDrink} />
         )}
         {activeTab === 'map' && (
           <Suspense fallback={<MapSkeleton />}>
@@ -1372,6 +1389,25 @@ export default function App() {
         user={user}
         onSave={(updated) => { setUser(updated); setShowEditProfile(false); }}
         onClose={() => setShowEditProfile(false)}
+      />
+    )}
+
+    {selectedDrink && (
+      <DrinkDetail
+        drink={selectedDrink}
+        user={user}
+        onClose={() => setSelectedDrink(null)}
+      />
+    )}
+
+    {showNotifications && (
+      <NotificationFeed
+        notifications={notifications}
+        onClose={() => setShowNotifications(false)}
+        onOpenDrink={(drink) => {
+          setShowNotifications(false)
+          setSelectedDrink(drink)
+        }}
       />
     )}
 
