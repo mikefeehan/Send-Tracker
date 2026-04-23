@@ -60,7 +60,7 @@ export default function Leaderboard({ drinks: rawDrinks, selectedFilter, onUserC
   if (leaderboard.length === 0) {
     return (
       <div className="text-center py-14" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.6)' }}>
-        <div className="text-6xl mb-4">🍻</div>
+        <div className="text-6xl mb-4">☘️</div>
         <p className="font-bold text-white text-lg">No drinks yet for {filterLabel}</p>
         <p className="text-base mt-2 text-slate-200">Be the first to get on the board</p>
       </div>
@@ -105,7 +105,7 @@ export default function Leaderboard({ drinks: rawDrinks, selectedFilter, onUserC
                   className={`rounded-full object-cover border-2 ${isFirst ? 'w-11 h-11 border-amber-400/60' : 'w-10 h-10 border-white/10'}`}
                 />
               ) : (
-                <div className={`rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-bold ${isFirst ? 'w-11 h-11 text-base' : 'w-10 h-10 text-sm'}`}>
+                <div className={`rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white font-bold ${isFirst ? 'w-11 h-11 text-base' : 'w-10 h-10 text-sm'}`}>
                   {user.name.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -121,7 +121,7 @@ export default function Leaderboard({ drinks: rawDrinks, selectedFilter, onUserC
                   <span key={b.label} title={b.label} className="text-sm leading-none">{b.emoji}</span>
                 ))}
                 {movement === 'new' && (
-                  <span className="text-xs font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full tracking-wide">NEW</span>
+                  <span className="text-xs font-bold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full tracking-wide">NEW</span>
                 )}
               </div>
               <div className={`text-sm mt-0.5 ${label.color}`}>{label.text}</div>

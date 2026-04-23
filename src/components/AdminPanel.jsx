@@ -192,12 +192,12 @@ export default function AdminPanel({ drinks, activeEvent }) {
             onChange={e => setPin(e.target.value)}
             placeholder="PIN"
             autoFocus
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-center text-2xl tracking-[0.5em] placeholder-slate-600 focus:outline-none focus:border-blue-500 mb-4"
+            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-center text-2xl tracking-[0.5em] placeholder-slate-600 focus:outline-none focus:border-amber-500 mb-4"
             onKeyDown={e => { if (e.key === 'Enter' && pin === ADMIN_PIN) setAuthed(true) }}
           />
           <button
             onClick={() => pin === ADMIN_PIN ? setAuthed(true) : setMsg('❌ Wrong PIN')}
-            className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-violet-600 active:scale-95 transition-all"
+            className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-amber-600 to-yellow-600 active:scale-95 transition-all"
           >
             Enter
           </button>
@@ -212,7 +212,7 @@ export default function AdminPanel({ drinks, activeEvent }) {
       <div className="max-w-lg mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-black text-white">🛡️ Admin Panel</h1>
-          <a href="/" className="text-sm text-blue-400 font-semibold">← Back to App</a>
+          <a href="/" className="text-sm text-amber-400 font-semibold">← Back to App</a>
         </div>
 
         {msg && (
@@ -223,7 +223,7 @@ export default function AdminPanel({ drinks, activeEvent }) {
         )}
 
         {busy && (
-          <div className="text-center text-blue-400 text-sm font-semibold animate-pulse">{busy}</div>
+          <div className="text-center text-amber-400 text-sm font-semibold animate-pulse">{busy}</div>
         )}
 
         {/* Create Event */}
@@ -235,7 +235,7 @@ export default function AdminPanel({ drinks, activeEvent }) {
               value={newEventName}
               onChange={e => setNewEventName(e.target.value)}
               placeholder="Event name (e.g. Vegas Weekend)"
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -244,7 +244,7 @@ export default function AdminPanel({ drinks, activeEvent }) {
                   type="date"
                   value={newEventStart}
                   onChange={e => setNewEventStart(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
@@ -253,14 +253,14 @@ export default function AdminPanel({ drinks, activeEvent }) {
                   type="date"
                   value={newEventEnd}
                   onChange={e => setNewEventEnd(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
             </div>
             <button
               onClick={createEvent}
               disabled={!newEventName.trim() || !newEventStart || !newEventEnd || !!busy}
-              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-violet-600 disabled:opacity-40 active:scale-95 transition-all"
+              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-amber-600 to-yellow-600 disabled:opacity-40 active:scale-95 transition-all"
             >
               Create & Activate Event
             </button>
@@ -317,12 +317,12 @@ export default function AdminPanel({ drinks, activeEvent }) {
             onChange={e => setAnnouncement(e.target.value)}
             placeholder="Type announcement for the feed..."
             rows={3}
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none mb-3"
+            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 resize-none mb-3"
           />
           <button
             onClick={postAnnouncement}
             disabled={!announcement.trim() || busy}
-            className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-violet-600 disabled:opacity-40 active:scale-95 transition-all"
+            className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-amber-600 to-yellow-600 disabled:opacity-40 active:scale-95 transition-all"
           >
             Post to Feed
           </button>
@@ -338,7 +338,7 @@ export default function AdminPanel({ drinks, activeEvent }) {
                 <div
                   onClick={() => setExpandedUser(expandedUser === u.userId ? null : u.userId)}
                   className={`flex items-center justify-between rounded-xl px-4 py-3 cursor-pointer transition-all ${
-                    expandedUser === u.userId ? 'bg-slate-700 border border-blue-500/30' : 'bg-slate-800 hover:bg-slate-750'
+                    expandedUser === u.userId ? 'bg-slate-700 border border-amber-500/30' : 'bg-slate-800 hover:bg-slate-750'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -359,7 +359,7 @@ export default function AdminPanel({ drinks, activeEvent }) {
 
                 {/* Expanded — individual drinks */}
                 {expandedUser === u.userId && (
-                  <div className="mt-1 ml-4 space-y-1.5 border-l-2 border-blue-500/20 pl-3 py-2">
+                  <div className="mt-1 ml-4 space-y-1.5 border-l-2 border-amber-500/20 pl-3 py-2">
                     {u.drinks.map(d => (
                       <div key={d.id} className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-3 py-2">
                         {d.imageUrl && (
@@ -369,7 +369,7 @@ export default function AdminPanel({ drinks, activeEvent }) {
                           <div className="text-sm text-white font-medium">
                             {DRINK_EMOJI[d.drinkType] || '🍸'} {d.drinkType}
                             {d.quantity > 1 ? ` ×${d.quantity}` : ''}
-                            <span className="text-blue-400 ml-1">{d.points}pts</span>
+                            <span className="text-amber-400 ml-1">{d.points}pts</span>
                           </div>
                           <div className="text-xs text-slate-500 truncate">
                             {d.location || 'no loc'} · {d.day} {formatTime(d)}

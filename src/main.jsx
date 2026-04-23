@@ -18,7 +18,7 @@ class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div style={{ minHeight: '100vh', background: '#06111a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#f0f4f8', fontFamily: 'sans-serif', padding: '24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🍻</div>
+          <div style={{ fontSize: '48px', marginBottom: '12px' }}>☘️</div>
           <h1 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Something went wrong</h1>
           <p style={{ color: '#7a8fa6', marginBottom: '20px' }}>Pull down to refresh or tap below to try again.</p>
           <button

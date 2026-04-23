@@ -10,7 +10,7 @@ html {
 }
 
 body {
-  background-color: #06111a;
+  background-color: #0C2340;
   color: #f0f4f8; /* slightly brighter base text */
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -150,8 +150,8 @@ body {
 .btn-cta {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 30%, #7c3aed 100%);
-  box-shadow: 0 0 36px rgba(59, 130, 246, 0.42), 0 4px 20px rgba(0,0,0,0.40);
+  background: linear-gradient(135deg, #C99700 0%, #b8860b 40%, #0C2340 100%);
+  box-shadow: 0 0 36px rgba(201, 151, 0, 0.42), 0 4px 20px rgba(0,0,0,0.40);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
   border-radius: 18px;
 }
@@ -167,13 +167,13 @@ body {
 
 .btn-cta:active {
   transform: scale(0.97);
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.28), 0 2px 10px rgba(0,0,0,0.35);
+  box-shadow: 0 0 16px rgba(201, 151, 0, 0.28), 0 2px 10px rgba(0,0,0,0.35);
 }
 
 /* ── Segment controls ── */
 .seg-active {
-  background: linear-gradient(135deg, #3b82f6, #7c3aed);
-  box-shadow: 0 2px 14px rgba(59, 130, 246, 0.38);
+  background: linear-gradient(135deg, #C99700, #0C2340);
+  box-shadow: 0 2px 14px rgba(201, 151, 0, 0.38);
   border-radius: 10px;
   color: white;
   font-weight: 700;

@@ -237,7 +237,7 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
       {/* Photo upload */}
       <div
         onClick={() => !submitting && fileInputRef.current?.click()}
-        className="relative w-full aspect-video bg-slate-800 rounded-xl border-2 border-dashed border-slate-600 flex items-center justify-center cursor-pointer overflow-hidden hover:border-blue-500 transition-colors"
+        className="relative w-full aspect-video bg-slate-800 rounded-xl border-2 border-dashed border-slate-600 flex items-center justify-center cursor-pointer overflow-hidden hover:border-amber-500 transition-colors"
       >
         {photoPreview ? (
           <img src={photoPreview} alt="preview" className="w-full h-full object-cover" />
@@ -272,12 +272,12 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
             onClick={() => setDrinkType(type.value)}
             className={`py-3 rounded-xl text-sm font-semibold transition-all ${
               drinkType === type.value
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
             <div>{type.label}</div>
-            <div className={`text-xs mt-0.5 ${drinkType === type.value ? 'text-blue-200' : 'text-slate-500'}`}>
+            <div className={`text-xs mt-0.5 ${drinkType === type.value ? 'text-amber-200' : 'text-slate-500'}`}>
               {type.points} pt{type.points !== 1 ? 's' : ''}
             </div>
           </button>
@@ -295,8 +295,8 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
               onClick={() => setQuantity(n)}
               className={`w-11 h-11 rounded-full text-sm font-bold transition-all ${
                 quantity === n
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                  : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500'
+                  ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                  : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-amber-500'
               }`}
             >
               {n}
@@ -314,7 +314,7 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
           type="button"
           onClick={detectLocation}
           disabled={locationStatus === 'loading'}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all bg-slate-800 text-slate-300 border border-slate-700 hover:border-amber-500 disabled:opacity-50"
         >
           {locationStatus === 'loading' ? '⏳ Locating...' : '📍 Auto-Detect Location'}
         </button>
@@ -324,7 +324,7 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
           onChange={e => setLocation(e.target.value)}
           placeholder="Or type your location"
           maxLength={80}
-          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
         />
       </div>
 
@@ -335,7 +335,7 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
         onChange={e => setDescription(e.target.value)}
         placeholder="Caption (optional)"
         maxLength={120}
-        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
       />
 
       {error && <p className="text-red-400 text-sm text-center">{error}</p>}
@@ -347,10 +347,10 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
         className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
           submitting || cooldown || !photo
             ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-            : 'bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-lg shadow-blue-600/30 active:scale-95'
+            : 'bg-gradient-to-r from-amber-600 to-violet-600 text-white shadow-lg shadow-amber-600/30 active:scale-95'
         }`}
       >
-        {submitting ? '⏳ Sending...' : cooldown ? '✅ Sent! Wait...' : '🍻 Submit Drink'}
+        {submitting ? '⏳ Sending...' : cooldown ? '✅ Sent! Wait...' : '☘️ Submit Drink'}
       </button>
     </form>
   )

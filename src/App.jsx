@@ -31,7 +31,7 @@ function SkeletonBlock({ className = '', style = {} }) {
 
 function AppBootSkeleton() {
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #050914 0%, #0a1224 40%, #0f1a2e 70%, #050914 100%)' }}>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0C2340 0%, #0a1c36 40%, #0C2340 70%, #091a2e 100%)' }}>
       <div className="max-w-lg mx-auto px-5 pt-6 space-y-5">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
@@ -107,12 +107,12 @@ function LoginScreen() {
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #050914 0%, #0a1224 40%, #0f1a2e 70%, #050914 100%)' }}>
+    <div className="fixed inset-0 flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #0C2340 0%, #0a1c36 40%, #0C2340 70%, #091a2e 100%)' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-7">
-          <div className="text-5xl mb-2">🍻</div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Send Tracker</h1>
-          <p className="text-slate-400 text-sm mt-1.5 font-medium">Track. Compete. Send It.</p>
+          <div className="text-5xl mb-2">☘️</div>
+          <h1 className="text-3xl font-black text-white tracking-tight">SD Weekend Send</h1>
+          <p className="text-slate-400 text-sm mt-1.5 font-medium">Go Irish. Send It. ☘️</p>
         </div>
 
         <div className="rounded-2xl p-6 space-y-4" style={{ background: 'rgba(10,18,34,0.85)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 60px rgba(0,0,0,0.5)' }}>
@@ -145,7 +145,7 @@ function LoginScreen() {
               onChange={e => setEmail(e.target.value)}
               placeholder="Email"
               required
-              className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
             />
             <input
               type="password"
@@ -154,7 +154,7 @@ function LoginScreen() {
               placeholder="Password"
               required
               minLength={6}
-              className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
             />
             {err && <p className="text-red-400 text-xs text-center">{err}</p>}
             <button
@@ -171,7 +171,7 @@ function LoginScreen() {
             className="w-full text-center text-sm text-slate-400 hover:text-white transition-colors"
           >
             {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-            <span className="text-blue-400 font-semibold">{mode === 'signin' ? 'Sign up' : 'Sign in'}</span>
+            <span className="text-amber-400 font-semibold">{mode === 'signin' ? 'Sign up' : 'Sign in'}</span>
           </button>
         </div>
 
@@ -289,7 +289,7 @@ function ProfileSetupModal({ authUser, onDone }) {
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm">
         <div className="text-center mb-6">
-          <div className="text-4xl mb-2">🍻</div>
+          <div className="text-4xl mb-2">☘️</div>
           <h1 className="text-2xl font-black text-white">Complete Your Profile</h1>
           <p className="text-slate-400 text-sm mt-1">Almost there</p>
         </div>
@@ -302,9 +302,9 @@ function ProfileSetupModal({ authUser, onDone }) {
               className="relative"
             >
               {photoPreview ? (
-                <img src={photoPreview} alt="profile" className="w-20 h-20 rounded-full object-cover border-4 border-blue-500" />
+                <img src={photoPreview} alt="profile" className="w-20 h-20 rounded-full object-cover border-4 border-amber-500" />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center text-3xl hover:border-blue-500 transition-colors">
+                <div className="w-20 h-20 rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center text-3xl hover:border-amber-500 transition-colors">
                   👤
                 </div>
               )}
@@ -322,7 +322,7 @@ function ProfileSetupModal({ authUser, onDone }) {
             required
             autoFocus
             maxLength={40}
-            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
           />
 
           <div>
@@ -337,7 +337,7 @@ function ProfileSetupModal({ authUser, onDone }) {
                 maxLength={20}
                 autoCapitalize="none"
                 autoCorrect="off"
-                className="w-full bg-slate-800 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-slate-800 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               />
               {usernameStatus === 'checking' && (
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">...</span>
@@ -544,9 +544,9 @@ function EditProfileModal({ user, onSave, onClose }) {
 
         <button type="button" onClick={() => fileRef.current?.click()} className="relative mx-auto block mb-4">
           {photoPreview ? (
-            <img src={photoPreview} alt="profile" className="w-20 h-20 rounded-full object-cover border-4 border-blue-500" />
+            <img src={photoPreview} alt="profile" className="w-20 h-20 rounded-full object-cover border-4 border-amber-500" />
           ) : (
-            <div className="w-20 h-20 rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center text-3xl hover:border-blue-500 transition-colors">👤</div>
+            <div className="w-20 h-20 rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center text-3xl hover:border-amber-500 transition-colors">👤</div>
           )}
           <div className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-white text-xs">+</div>
         </button>
@@ -558,7 +558,7 @@ function EditProfileModal({ user, onSave, onClose }) {
           onChange={e => setName(e.target.value)}
           placeholder="Display name"
           maxLength={40}
-          className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors mb-3"
+          className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors mb-3"
         />
 
         <div className="mb-3">
@@ -572,7 +572,7 @@ function EditProfileModal({ user, onSave, onClose }) {
               maxLength={20}
               autoCapitalize="none"
               autoCorrect="off"
-              className="w-full bg-slate-800 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-slate-800 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
             />
             {usernameStatus === 'checking' && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">...</span>
@@ -595,7 +595,7 @@ function EditProfileModal({ user, onSave, onClose }) {
           <button
             onClick={handleSave}
             disabled={!name.trim() || !username.trim() || usernameStatus === 'taken' || usernameStatus === 'checking' || saving}
-            className="flex-1 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-violet-600 disabled:opacity-40 active:scale-95 transition-all"
+            className="flex-1 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-amber-600 to-yellow-600 disabled:opacity-40 active:scale-95 transition-all"
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
@@ -716,7 +716,7 @@ function UsernameSetupModal({ user, onDone }) {
                 maxLength={20}
                 autoCapitalize="none"
                 autoCorrect="off"
-                className="w-full bg-slate-800 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-slate-800 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               />
               {usernameStatus === 'checking' && (
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">...</span>
@@ -771,7 +771,7 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
           background: 'rgba(7,14,28,0.96)',
           backdropFilter: 'blur(32px)',
           borderTop: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 -8px 48px rgba(59,130,246,0.12)',
+          boxShadow: '0 -8px 48px rgba(201,151,0,0.12)',
         }}
       >
         <div className="flex justify-center pt-3 pb-1">
@@ -781,12 +781,12 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
         <div className="px-6 pt-3 pb-8 space-y-5">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg,#3b82f6,#7c3aed)', boxShadow: '0 0 28px rgba(59,130,246,0.5)' }}>
-              🍻
+              style={{ background: 'linear-gradient(135deg,#C99700,#0C2340)', boxShadow: '0 0 28px rgba(201,151,0,0.5)' }}>
+              ☘️
             </div>
             <div>
               <h2 className="text-xl font-black leading-tight"
-                style={{ background: 'linear-gradient(90deg,#3b82f6,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                style={{ background: 'linear-gradient(90deg,#C99700,#0C2340)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 Add to Home Screen
               </h2>
               <p className="text-slate-400 text-sm mt-0.5">One tap to open — no App Store needed</p>
@@ -818,8 +818,8 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
           {isIOS ? (
             <>
               <div className="rounded-2xl px-4 py-4 space-y-3"
-                style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)' }}>
-                <p className="text-xs font-bold text-blue-400 uppercase tracking-widest">How to add on iPhone</p>
+                style={{ background: 'rgba(201,151,0,0.08)', border: '1px solid rgba(201,151,0,0.25)' }}>
+                <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">How to add on iPhone</p>
                 {[
                   ['1', 'Tap the', 'Share', 'button at the bottom'],
                   ['2', 'Scroll down and tap', '"View More"', ''],
@@ -827,10 +827,10 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
                 ].map(([n, pre, bold, post]) => (
                   <div key={n} className="flex items-start gap-3">
                     <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0 mt-0.5"
-                      style={{ background: 'linear-gradient(135deg,#3b82f6,#7c3aed)' }}>{n}</div>
+                      style={{ background: 'linear-gradient(135deg,#C99700,#0C2340)' }}>{n}</div>
                     <p className="text-sm text-slate-300">
                       {pre}{' '}
-                      <span style={{ background: 'linear-gradient(90deg,#3b82f6,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>
+                      <span style={{ background: 'linear-gradient(90deg,#C99700,#0C2340)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>
                         {bold}
                       </span>
                       {post ? ' ' + post : ''}
@@ -857,10 +857,10 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
           ) : (
             <>
               <div className="rounded-2xl px-5 py-4 text-center space-y-2"
-                style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)' }}>
+                style={{ background: 'rgba(201,151,0,0.08)', border: '1px solid rgba(201,151,0,0.25)' }}>
                 <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Open your browser menu and tap</p>
                 <p className="text-xl font-black"
-                  style={{ background: 'linear-gradient(90deg,#3b82f6,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  style={{ background: 'linear-gradient(90deg,#C99700,#0C2340)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                   "Add to Home Screen"
                 </p>
                 <p className="text-xs text-slate-500">Then tap <span className="text-slate-300 font-semibold">"Add"</span> to confirm 🎉</p>
@@ -948,7 +948,7 @@ function Winners({ drinks: rawDrinks, activeEvent }) {
                 ) : winner ? (
                   <>
                     <div className="text-base font-bold text-white truncate leading-tight">{winner.name}</div>
-                    <div className="text-sm text-blue-400 font-semibold mt-0.5">{winner.points} pts</div>
+                    <div className="text-sm text-amber-400 font-semibold mt-0.5">{winner.points} pts</div>
                   </>
                 ) : (
                   <div className="text-sm text-slate-700 py-1">—</div>
@@ -1193,7 +1193,7 @@ export default function App() {
       className="ambient-bg min-h-screen pb-36"
       style={{
         position: 'relative',
-        background: 'linear-gradient(135deg, #050914 0%, #0a1224 40%, #0f1a2e 70%, #050914 100%)',
+        background: 'linear-gradient(135deg, #0C2340 0%, #0a1c36 40%, #0C2340 70%, #091a2e 100%)',
       }}
     >
       <div style={{
@@ -1209,12 +1209,12 @@ export default function App() {
       <header className="sticky top-0 z-40 border-b border-white/[0.08]" style={{ background: 'rgba(3,7,18,0.94)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', paddingTop: 'max(0px, env(safe-area-inset-top))' }}>
         <div className="max-w-lg mx-auto px-5 py-3.5 flex items-center justify-between">
           <div>
-            <h1 className="text-[17px] font-black text-white leading-none tracking-tight">🍻 Send Tracker</h1>
+            <h1 className="text-[17px] font-black text-white leading-none tracking-tight">☘️ SD Weekend Send</h1>
             <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
               Hey, {user.name}!
               {(() => {
                 const pts = eventDrinks.filter(d => d.userId === user.userId).reduce((sum, d) => sum + (d.points || 0), 0)
-                return pts > 0 ? <span className="ml-1.5 text-blue-400 font-bold">⚡ {pts} pts</span> : null
+                return pts > 0 ? <span className="ml-1.5 text-amber-400 font-bold">⚡ {pts} pts</span> : null
               })()}
             </p>
           </div>
@@ -1234,7 +1234,7 @@ export default function App() {
               onClick={() => setShowRecap(true)}
               aria-label="View recap stats"
               className="text-[12px] font-semibold text-white px-3 py-1.5 rounded-full transition-all active:scale-95"
-              style={{ background: 'linear-gradient(135deg,rgba(59,130,246,0.25),rgba(124,58,237,0.25))', border: '1px solid rgba(59,130,246,0.3)' }}
+              style={{ background: 'linear-gradient(135deg,rgba(201,151,0,0.25),rgba(12,35,64,0.25))', border: '1px solid rgba(201,151,0,0.3)' }}
             >
               📊
             </button>
@@ -1336,7 +1336,7 @@ export default function App() {
           <details className="group" id="drink-form">
             <summary className="list-none cursor-pointer">
               <div className="btn-cta w-full py-4 font-bold text-white text-base text-center select-none summary-open-hide">
-                🍻 &nbsp;Log a Drink
+                ☘️ &nbsp;Log a Drink
               </div>
               <div className="summary-open-show items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-slate-300" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
                 ✕ Close
@@ -1402,7 +1402,7 @@ export default function App() {
 
     {toast && (
       <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl text-white font-bold text-sm shadow-xl animate-bounce"
-        style={{ background: 'linear-gradient(135deg,#3b82f6,#7c3aed)', boxShadow: '0 8px 32px rgba(59,130,246,0.4)' }}>
+        style={{ background: 'linear-gradient(135deg,#C99700,#0C2340)', boxShadow: '0 8px 32px rgba(201,151,0,0.4)' }}>
         {toast}
       </div>
     )}

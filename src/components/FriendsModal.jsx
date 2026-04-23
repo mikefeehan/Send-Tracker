@@ -15,7 +15,7 @@ function Avatar({ user, size = 'md' }) {
     return <img src={user.profilePhoto} alt={user.name} className={`${sizeClass} rounded-full object-cover border-2 border-white/10`} />
   }
   return (
-    <div className={`${sizeClass} rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-bold`}>
+    <div className={`${sizeClass} rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white font-bold`}>
       {(user?.name || '?').charAt(0).toUpperCase()}
     </div>
   )
@@ -167,7 +167,7 @@ export default function FriendsModal({ currentUser, allUsers, friendships, onClo
                     <button
                       onClick={() => handleAccept(friendship.id)}
                       disabled={busy === friendship.id}
-                      className="text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-violet-600 px-3 py-1.5 rounded-full active:scale-95 transition-all disabled:opacity-50"
+                      className="text-[11px] font-bold text-white bg-gradient-to-r from-amber-600 to-yellow-600 px-3 py-1.5 rounded-full active:scale-95 transition-all disabled:opacity-50"
                     >
                       Accept
                     </button>
@@ -192,7 +192,7 @@ export default function FriendsModal({ currentUser, allUsers, friendships, onClo
                 onChange={e => setSearchQ(e.target.value)}
                 placeholder="Search by name or @username..."
                 autoFocus
-                className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors mb-2"
+                className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors mb-2"
               />
 
               {searchResults.length === 0 && (
@@ -222,7 +222,7 @@ export default function FriendsModal({ currentUser, allUsers, friendships, onClo
                     <button
                       onClick={() => handleAccept(id)}
                       disabled={busy === id}
-                      className="text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-violet-600 px-3 py-1.5 rounded-full active:scale-95 transition-all"
+                      className="text-[11px] font-bold text-white bg-gradient-to-r from-amber-600 to-yellow-600 px-3 py-1.5 rounded-full active:scale-95 transition-all"
                     >
                       Accept
                     </button>
@@ -232,7 +232,7 @@ export default function FriendsModal({ currentUser, allUsers, friendships, onClo
                     <button
                       onClick={() => handleAdd(u.userId)}
                       disabled={busy === u.userId}
-                      className="text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-violet-600 px-3 py-1.5 rounded-full active:scale-95 transition-all disabled:opacity-50"
+                      className="text-[11px] font-bold text-white bg-gradient-to-r from-amber-600 to-yellow-600 px-3 py-1.5 rounded-full active:scale-95 transition-all disabled:opacity-50"
                     >
                       + Add
                     </button>

@@ -55,7 +55,7 @@ export default function AgeGate({ onVerified }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #050914 0%, #0a1224 40%, #0f1a2e 70%, #050914 100%)' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
-          <div className="text-5xl mb-2">🍻</div>
+          <div className="text-5xl mb-2">☘️</div>
           <h1 className="text-3xl font-black text-white tracking-tight">Welcome</h1>
           <p className="text-slate-400 text-sm mt-1.5">Send Tracker is for adults 21+</p>
         </div>

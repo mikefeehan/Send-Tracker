@@ -22,7 +22,7 @@ function timeAgo(timestamp) {
 
 function getLabel(points) {
   if (points <= 2) return { text: 'On the Board', color: 'text-slate-400' }
-  if (points <= 5) return { text: 'In the Mix', color: 'text-blue-400' }
+  if (points <= 5) return { text: 'In the Mix', color: 'text-amber-400' }
   if (points <= 8) return { text: 'Heating Up', color: 'text-orange-400' }
   if (points <= 11) return { text: 'Danger Zone', color: 'text-red-400' }
   return { text: 'Absolute Menace', color: 'text-purple-400' }
@@ -136,10 +136,10 @@ export default function UserProfile({ profile, currentUser, drinks, friendships,
               <img
                 src={profile.profilePhoto}
                 alt={profile.name}
-                className="w-16 h-16 rounded-full object-cover border-2 border-blue-500"
+                className="w-16 h-16 rounded-full object-cover border-2 border-amber-500"
               />
             ) : (
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-black text-2xl">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-violet-600 flex items-center justify-center text-white font-black text-2xl">
                 {profile.name.charAt(0).toUpperCase()}
               </div>
             )}
@@ -197,7 +197,7 @@ export default function UserProfile({ profile, currentUser, drinks, friendships,
                       <span className="text-xs text-slate-300">
                         {DRINK_EMOJI[drink.drinkType]} {DRINK_LABEL[drink.drinkType]}
                       </span>
-                      <span className="text-xs text-blue-400 font-bold">+{drink.points}pt</span>
+                      <span className="text-xs text-amber-400 font-bold">+{drink.points}pt</span>
                     </div>
                     {drink.description && (
                       <p className="text-xs text-slate-500 mt-1 truncate">{drink.description}</p>

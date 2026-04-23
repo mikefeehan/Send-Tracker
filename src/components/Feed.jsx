@@ -113,7 +113,7 @@ function DrinkCard({ drink, user }) {
             className="w-9 h-9 rounded-full object-cover border-2 border-slate-600 flex-shrink-0 mt-0.5"
           />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 mt-0.5">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 mt-0.5">
             {drink.name.charAt(0).toUpperCase()}
           </div>
         )}
@@ -125,7 +125,7 @@ function DrinkCard({ drink, user }) {
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="text-sm">{drink.quantity > 1 ? `${drink.quantity}x ` : ''}{DRINK_EMOJI[drink.drinkType]} {DRINK_LABEL[drink.drinkType]}</span>
-            <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded-full">
+            <span className="text-xs bg-amber-600/20 text-amber-400 px-2 py-0.5 rounded-full">
               +{drink.points} pt{drink.points !== 1 ? 's' : ''}
             </span>
             <span className="text-xs text-slate-500">{(() => {
@@ -148,7 +148,7 @@ function DrinkCard({ drink, user }) {
         <button
           onClick={toggleLike}
           className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-            isLiked ? 'text-blue-400' : 'text-slate-400 hover:text-blue-400'
+            isLiked ? 'text-amber-400' : 'text-slate-400 hover:text-amber-400'
           }`}
         >
           <span className="text-base">{isLiked ? '❤️' : '🤍'}</span>
@@ -194,7 +194,7 @@ function DrinkCard({ drink, user }) {
                   onClick={() => setEditType(type.value)}
                   className={`py-2 rounded-lg text-xs font-semibold transition-all ${
                     editType === type.value
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-amber-600 text-white'
                       : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   }`}
                 >
@@ -213,7 +213,7 @@ function DrinkCard({ drink, user }) {
                   onClick={() => setEditQty(n)}
                   className={`w-9 h-9 rounded-full text-xs font-bold transition-all ${
                     editQty === n
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-amber-600 text-white'
                       : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   }`}
                 >
@@ -227,7 +227,7 @@ function DrinkCard({ drink, user }) {
           </div>
           <button
             onClick={saveEdit}
-            className="w-full py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white active:scale-95 transition-all"
+            className="w-full py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white active:scale-95 transition-all"
           >
             Save Changes
           </button>
@@ -263,7 +263,7 @@ function DrinkCard({ drink, user }) {
           )}
           {comments.map((c, i) => (
             <div key={`${c.userId}_${c.at}_${i}`} className="flex gap-2">
-              <span className="text-xs font-semibold text-blue-400 flex-shrink-0">{c.name}</span>
+              <span className="text-xs font-semibold text-amber-400 flex-shrink-0">{c.name}</span>
               <span className="text-xs text-slate-300">{c.text}</span>
             </div>
           ))}
@@ -276,12 +276,12 @@ function DrinkCard({ drink, user }) {
               onChange={e => setCommentText(e.target.value)}
               placeholder="Add a comment..."
               maxLength={200}
-              className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
             <button
               type="submit"
               disabled={!commentText.trim() || posting}
-              className="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg disabled:opacity-40"
+              className="px-3 py-1.5 bg-amber-600 text-white text-sm font-semibold rounded-lg disabled:opacity-40"
             >
               Post
             </button>
