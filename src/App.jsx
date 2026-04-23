@@ -271,6 +271,7 @@ function ProfileSetupModal({ authUser, onDone }) {
       username: normalizedUsername,
       profilePhoto: profilePhotoUrl,
       email: authUser.email || '',
+      ageVerified: true,
       createdAt: Date.now(),
     }
     try {
@@ -880,84 +881,67 @@ function InstallPrompt({ deferredPrompt, onDismiss }) {
 }
 
 // ─── Winners bar ──────────────────────────────────────────────────────────────
-function Winners({ drinks: rawDrinks, activeEvent }) {
+function Winners({ drinks: rawDrinks }) {
   const drinks = rawDrinks.filter(d => d.userId !== 'ADMIN')
 
-  function topForDay(dayStr) {
-    const dayDrinks = drinks.filter(d => d.day === dayStr)
-    const map = {}
-    dayDrinks.forEach(d => {
-      map[d.userId] = map[d.userId] || { name: d.name, points: 0 }
-      map[d.userId].points += d.points
-    })
-    const sorted = Object.values(map).sort((a, b) => b.points - a.points)
-    return sorted[0] || null
-  }
+  // Build ranked list
+  const map = {}
+  drinks.forEach(d => {
+    map[d.userId] = map[d.userId] || { name: d.name, points: 0 }
+    map[d.userId].points += d.points
+  })
+  const ranked = Object.values(map).sort((a, b) => b.points - a.points)
 
-  function overallChamp() {
-    const map = {}
-    drinks.forEach(d => {
-      map[d.userId] = map[d.userId] || { name: d.name, points: 0 }
-      map[d.userId].points += d.points
-    })
-    const sorted = Object.values(map).sort((a, b) => b.points - a.points)
-    return sorted[0] || null
-  }
+  if (ranked.length === 0) return null
 
-  const champ = overallChamp()
-  if (!champ) return null
-
-  const eventDays = [...new Set(drinks.map(d => d.day))].sort()
-  const todayStr = getTodayStr()
+  const first = ranked[0]
+  const second = ranked[1]
+  const third = ranked[2]
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
+      {/* 1st Place — Gold */}
       <div className="card-hero px-5 py-4">
         <div className="flex items-center gap-3">
           <div>
-            <div className="text-[11px] font-semibold text-amber-400/80 uppercase tracking-widest mb-0.5">
-              {activeEvent ? activeEvent.name + ' Leader' : 'All-Time Leader'}
-            </div>
-            <div className="text-xl font-black text-white">{champ.name}</div>
+            <div className="text-[11px] font-semibold text-amber-400/80 uppercase tracking-widest mb-0.5">👑 1st Place</div>
+            <div className="text-xl font-black text-white">{first.name}</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <span className="text-3xl font-black text-shimmer-gold">{champ.points}</span>
-            <div>
-              <span className="text-2xl">👑</span>
-              <div className="text-[10px] text-amber-400/70 text-center font-semibold">pts</div>
-            </div>
+            <span className="text-3xl font-black text-shimmer-gold">{first.points}</span>
+            <div className="text-[10px] text-amber-400/70 text-center font-semibold">pts</div>
           </div>
         </div>
       </div>
 
-      {eventDays.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-          {eventDays.map(dayStr => {
-            const winner = topForDay(dayStr)
-            const isFuture = dayStr > todayStr
-            const dayDate = new Date(dayStr + 'T12:00:00')
-            const label = dayDate.toLocaleDateString('en-US', { weekday: 'short' })
-            return (
-              <div key={dayStr} className={`${isFuture ? 'card-tbd' : 'card'} px-3 py-3 text-center flex-shrink-0`} style={{ minWidth: '100px' }}>
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{label} 🏆</div>
-                {isFuture ? (
-                  <div className="py-0.5">
-                    <div className="text-xl mb-0.5">👀</div>
-                    <div className="text-sm text-slate-600 font-semibold tracking-wide">TBD</div>
-                  </div>
-                ) : winner ? (
-                  <>
-                    <div className="text-base font-bold text-white truncate leading-tight">{winner.name}</div>
-                    <div className="text-sm text-amber-400 font-semibold mt-0.5">{winner.points} pts</div>
-                  </>
-                ) : (
-                  <div className="text-sm text-slate-700 py-1">—</div>
-                )}
-              </div>
-            )
-          })}
+      {/* 2nd & 3rd — side by side */}
+      <div className="grid grid-cols-2 gap-2">
+        {/* 2nd Place — Silver */}
+        <div className="card px-4 py-3">
+          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">🥈 2nd Place</div>
+          {second ? (
+            <>
+              <div className="text-base font-bold text-white truncate">{second.name}</div>
+              <div className="text-sm text-slate-300 font-semibold mt-0.5">{second.points} pts</div>
+            </>
+          ) : (
+            <div className="text-sm text-slate-600 py-1">—</div>
+          )}
         </div>
-      )}
+
+        {/* 3rd Place — Bronze */}
+        <div className="card px-4 py-3">
+          <div className="text-[11px] font-semibold text-amber-700/80 uppercase tracking-wider mb-1">🥉 3rd Place</div>
+          {third ? (
+            <>
+              <div className="text-base font-bold text-white truncate">{third.name}</div>
+              <div className="text-sm text-amber-700/80 font-semibold mt-0.5">{third.points} pts</div>
+            </>
+          ) : (
+            <div className="text-sm text-slate-600 py-1">—</div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -980,7 +964,7 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handler)
   }, [])
   const [selectedFilter, setSelectedFilter] = useState('today')
-  const [scope, setScope] = useState('global') // 'friends' | 'global'
+  const [scope, setScope] = useState('global') // forced global for this version
   const [activeTab, setActiveTab] = useState('leaderboard')
   const [selectedProfile, setSelectedProfile] = useState(null) // full user doc
   const [showRecap, setShowRecap] = useState(false)
@@ -1153,8 +1137,10 @@ export default function App() {
   }
 
   // Age gate — after sign-up/sign-in, before entering the app
-  // Stored on the Firestore user doc so it persists across devices/cache clears
-  if (!user.ageVerified && !ageVerified) {
+  // Check both Firestore (persistent) and localStorage (fast). If either says verified, skip.
+  // If localStorage says verified but Firestore doesn't, sync it up.
+  const alreadyVerified = user.ageVerified || ageVerified
+  if (!alreadyVerified) {
     return <AgeGate onVerified={async () => {
       setAgeVerified(true)
       try {
@@ -1164,6 +1150,12 @@ export default function App() {
         console.error('Failed to save age verification:', e)
       }
     }} />
+  }
+  // If localStorage verified but Firestore not yet synced, save it now (fire-and-forget)
+  if (ageVerified && !user.ageVerified) {
+    setDoc(doc(db, 'users', user.userId), { ageVerified: true }, { merge: true })
+      .then(() => setUser(prev => ({ ...prev, ageVerified: true })))
+      .catch(() => {})
   }
 
   // Existing users without a username — prompt them to pick one
@@ -1264,24 +1256,7 @@ export default function App() {
           </div>
         )}
 
-        <Winners drinks={eventDrinks} activeEvent={activeEvent} />
-
-        {/* Scope toggle: Global / Friends — only show once the user has friends */}
-        {hasFriends && (
-          <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl" style={{ background: 'rgba(10,18,34,0.6)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            {[['global', '🌐 Global'], ['friends', `👥 Friends`]].map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setScope(key)}
-                className={`py-2 text-xs font-semibold transition-all duration-200 ${
-                  scope === key ? 'seg-active' : 'seg-inactive'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
+        <Winners drinks={eventDrinks} />
 
         <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl" style={{ background: 'rgba(10,18,34,0.6)', border: '1px solid rgba(255,255,255,0.05)' }}>
           {['today', 'all'].map(filter => (
