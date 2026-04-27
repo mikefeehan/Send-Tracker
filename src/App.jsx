@@ -4,6 +4,8 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import {
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -1181,6 +1183,24 @@ export default function App() {
     eventDrinks = eventDrinks.filter(d => allowed.has(d.userId))
   }
 
+  function showCelebration() {
+    const emojis = ['☘️', '🏈', '🍺', '🎉', '⭐', '🏆', '💥', '🙌']
+    const container = document.createElement('div')
+    container.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden'
+    document.body.appendChild(container)
+    for (let i = 0; i < 20; i++) {
+      const el = document.createElement('div')
+      const emoji = emojis[Math.floor(Math.random() * emojis.length)]
+      const x = Math.random() * 100
+      const delay = Math.random() * 0.5
+      const size = 20 + Math.random() * 20
+      el.textContent = emoji
+      el.style.cssText = `position:absolute;left:${x}%;top:-40px;font-size:${size}px;animation:confettiFall ${1.5 + Math.random()}s ease-out ${delay}s forwards;pointer-events:none`
+      container.appendChild(el)
+    }
+    setTimeout(() => container.remove(), 3000)
+  }
+
   const pendingRequestCount = getIncomingRequests(user.userId, friendships).length
   const notifications = getNotifications(user.userId, drinks, allUsers)
   const notifCount = notifications.length
@@ -1328,18 +1348,20 @@ export default function App() {
           <details className="group" id="drink-form">
             <summary className="list-none cursor-pointer">
               <div className="btn-cta w-full py-4 font-bold text-white text-base text-center select-none summary-open-hide">
-                ☘️ &nbsp;Log a Drink
+                ☘️ &nbsp;Log a Drink/Activity
               </div>
               <div className="summary-open-show items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-slate-300" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
                 ✕ Close
               </div>
             </summary>
-            <div className="mt-4 pb-2">
+            <div className="mt-4 pb-2 max-h-[60vh] overflow-y-auto rounded-xl" style={{ scrollbarWidth: 'thin' }}>
               <SubmitDrink user={user} activeEvent={activeEvent} onSuccess={() => {
                 const el = document.getElementById('drink-form')
                 if (el) el.removeAttribute('open')
-                setToast('🎉 Drink logged!')
+                setToast('🎉 Logged! ☘️')
                 setTimeout(() => setToast(''), 3000)
+                // Celebration burst
+                showCelebration()
               }} />
             </div>
           </details>

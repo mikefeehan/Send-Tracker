@@ -3,7 +3,7 @@ import { collection, getDocs, deleteDoc, doc, addDoc, updateDoc, Timestamp, quer
 import { db } from '../firebase'
 
 const ADMIN_PIN = '2026'
-const DRINK_EMOJI = { beer: '🍺', cocktail: '🍸', shot: '🥃' }
+const DRINK_EMOJI = { beer: '🍺', cocktail: '🍸', shot: '🥃', shotgun: '🔫', birdie: '🦅', mulligan: '⛳', makeout: '💋', bird: '🐣', wingman: '🤝' }
 
 export default function AdminPanel({ drinks, activeEvent }) {
   const [authed, setAuthed] = useState(false)

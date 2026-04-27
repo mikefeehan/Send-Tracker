@@ -197,6 +197,13 @@ body {
   animation: shimmerSlide 4s linear infinite;
 }
 
+/* ── Confetti celebration ── */
+@keyframes confettiFall {
+  0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg) scale(0.5); opacity: 0; }
+}
+
 /* ── Fade-in utility ── */
 .animate-fade-in {
   animation: fadeInUp 0.35s ease forwards;

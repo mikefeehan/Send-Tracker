@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -18,3 +18,8 @@ export const db = getFirestore(app)
 export const storage = getStorage(app)
 export const auth = getAuth(app)
 export const googleProvider = new GoogleAuthProvider()
+
+// Force LOCAL persistence — survives browser/tab close, app restart, PWA relaunch
+setPersistence(auth, browserLocalPersistence).catch(err => {
+  console.error('Auth persistence setup failed:', err)
+})

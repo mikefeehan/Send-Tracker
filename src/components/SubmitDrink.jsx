@@ -33,6 +33,12 @@ const DRINK_TYPES = [
   { value: 'beer', label: '🍺 Beer/Seltzer/Wine', points: 1.5 },
   { value: 'cocktail', label: '🍸 Cocktail', points: 2 },
   { value: 'shot', label: '🥃 Shot', points: 2.5 },
+  { value: 'shotgun', label: '🔫 Beer Shotgun', points: 4 },
+  { value: 'birdie', label: '🦅 Birdie or Better', points: 1 },
+  { value: 'mulligan', label: '⛳ Mulligan', points: -1 },
+  { value: 'makeout', label: '💋 Dance Floor Makeout', points: 10 },
+  { value: 'wingman', label: '🤝 Wingman Assist', points: 5 },
+  { value: 'bird', label: '🐣 Brought a Bird Home', points: 30 },
 ]
 
 function getTodayStr() {
@@ -134,49 +140,53 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
         return
       }
 
-      try {
-        const reader = new FileReader()
-        const base64 = await new Promise((resolve, reject) => {
-          reader.onload = () => resolve(reader.result.split(',')[1])
-          reader.onerror = reject
-          reader.readAsDataURL(photo)
-        })
+      // Skip AI verification for non-drink bonus categories
+      const skipVerification = ['makeout', 'bird', 'wingman', 'shotgun', 'birdie', 'mulligan'].includes(drinkType)
 
-        // Get Firebase ID token for server-side auth + rate limiting
-        let idToken = ''
+      if (!skipVerification) {
         try {
-          idToken = (await auth.currentUser?.getIdToken()) || ''
-        } catch { /* ignore, fall through unauthenticated */ }
+          const reader = new FileReader()
+          const base64 = await new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result.split(',')[1])
+            reader.onerror = reject
+            reader.readAsDataURL(photo)
+          })
 
-        const checkRes = await fetch('/api/checkPhoto', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-          },
-          body: JSON.stringify({
-            imageBase64: base64,
-            mediaType: photo.type || 'image/jpeg',
-            drinkType: selected.label,
-          }),
-        })
+          // Get Firebase ID token for server-side auth + rate limiting
+          let idToken = ''
+          try {
+            idToken = (await auth.currentUser?.getIdToken()) || ''
+          } catch { /* ignore, fall through unauthenticated */ }
 
-        if (!checkRes.ok) {
-          throw new Error(`Verification server returned ${checkRes.status}`)
-        }
+          const checkRes = await fetch('/api/checkPhoto', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+            },
+            body: JSON.stringify({
+              imageBase64: base64,
+              mediaType: photo.type || 'image/jpeg',
+              drinkType: selected.label,
+            }),
+          })
 
-        const check = await checkRes.json()
-        if (!check.approved) {
-          setError(`🚫 ${check.reason || 'Photo could not be verified'}`)
+          if (!checkRes.ok) {
+            throw new Error(`Verification server returned ${checkRes.status}`)
+          }
+
+          const check = await checkRes.json()
+          if (!check.approved) {
+            setError(`🚫 ${check.reason || 'Photo could not be verified'}`)
+            setSubmitting(false)
+            return
+          }
+        } catch (verifyErr) {
+          console.warn('Photo verification unavailable:', verifyErr)
+          setError('⚠️ Could not reach verification service. Check your connection and try again.')
           setSubmitting(false)
           return
         }
-      } catch (verifyErr) {
-        console.warn('Photo verification unavailable:', verifyErr)
-        // Network/server error — inform the user but don't silently approve
-        setError('⚠️ Could not reach verification service. Check your connection and try again.')
-        setSubmitting(false)
-        return
       }
 
       const imageRef = ref(storage, `drinks/${user.userId}_${Date.now()}`)
@@ -205,6 +215,12 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
 
       await addDoc(collection(db, 'drinks'), drinkData)
       addSubmitTimestamp()
+
+      // Haptic feedback on successful submit
+      if (navigator.vibrate) {
+        const isBigPlay = ['makeout', 'bird', 'wingman', 'shotgun'].includes(selected.value)
+        navigator.vibrate(isBigPlay ? [100, 50, 100, 50, 200] : [80, 40, 80])
+      }
 
       setPhoto(null)
       setPhotoPreview(null)
@@ -350,7 +366,7 @@ export default function SubmitDrink({ user, activeEvent, onSuccess }) {
             : 'bg-gradient-to-r from-amber-600 to-violet-600 text-white shadow-lg shadow-amber-600/30 active:scale-95'
         }`}
       >
-        {submitting ? '⏳ Sending...' : cooldown ? '✅ Sent! Wait...' : '☘️ Submit Drink'}
+        {submitting ? '⏳ Sending...' : cooldown ? '✅ Sent! Wait...' : '☘️ Submit Drink/Activity'}
       </button>
     </form>
   )

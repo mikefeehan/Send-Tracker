@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { doc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 
-const DRINK_EMOJI = { beer: '🍺', wine: '🍷', shot: '🥃', cocktail: '🍸' }
-const DRINK_LABEL = { beer: 'Beer/Seltzer/Wine', wine: 'Beer/Seltzer/Wine', shot: 'Shot', cocktail: 'Cocktail' }
+const DRINK_EMOJI = { beer: '🍺', wine: '🍷', shot: '🥃', cocktail: '🍸', shotgun: '🔫', birdie: '🦅', mulligan: '⛳', makeout: '💋', bird: '🐣', wingman: '🤝' }
+const DRINK_LABEL = { beer: 'Beer/Seltzer/Wine', wine: 'Beer/Seltzer/Wine', shot: 'Shot', cocktail: 'Cocktail', shotgun: 'Beer Shotgun', birdie: 'Birdie or Better', mulligan: 'Mulligan', makeout: 'Dance Floor Makeout', bird: 'Brought a Bird Home', wingman: 'Wingman Assist' }
 
 function timeAgo(timestamp) {
   if (!timestamp) return ''

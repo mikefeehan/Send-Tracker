@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { doc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 
-const DRINK_EMOJI = { beer: '🍺', wine: '🍷', shot: '🥃', cocktail: '🍸' }
-const DRINK_LABEL = { beer: 'Beer/Seltzer/Wine', wine: 'Beer/Seltzer/Wine', shot: 'Shot', cocktail: 'Cocktail' }
+const DRINK_EMOJI = { beer: '🍺', wine: '🍷', shot: '🥃', cocktail: '🍸', shotgun: '🔫', birdie: '🦅', mulligan: '⛳', makeout: '💋', bird: '🐣', wingman: '🤝' }
+const DRINK_LABEL = { beer: 'Beer/Seltzer/Wine', wine: 'Beer/Seltzer/Wine', shot: 'Shot', cocktail: 'Cocktail', shotgun: 'Beer Shotgun', birdie: 'Birdie or Better', mulligan: 'Mulligan', makeout: 'Dance Floor Makeout', bird: 'Brought a Bird Home', wingman: 'Wingman Assist' }
 
 function timeAgo(timestamp) {
   if (!timestamp) return ''
@@ -19,6 +19,12 @@ const DRINK_TYPES = [
   { value: 'beer', label: '🍺 Beer/Seltzer/Wine', points: 1.5 },
   { value: 'cocktail', label: '🍸 Cocktail', points: 2 },
   { value: 'shot', label: '🥃 Shot', points: 2.5 },
+  { value: 'shotgun', label: '🔫 Beer Shotgun', points: 4 },
+  { value: 'birdie', label: '🦅 Birdie or Better', points: 1 },
+  { value: 'mulligan', label: '⛳ Mulligan', points: -1 },
+  { value: 'makeout', label: '💋 Dance Floor Makeout', points: 10 },
+  { value: 'wingman', label: '🤝 Wingman Assist', points: 5 },
+  { value: 'bird', label: '🐣 Brought a Bird Home', points: 30 },
 ]
 
 function DrinkCard({ drink, user, onImageClick }) {

@@ -37,10 +37,10 @@ service cloud.firestore {
                    && request.resource.data.name is string
                    && request.resource.data.name.size() > 0
                    && request.resource.data.name.size() <= 80
-                   && request.resource.data.drinkType in ['beer', 'wine', 'shot', 'cocktail']
+                   && request.resource.data.drinkType in ['beer', 'wine', 'shot', 'cocktail', 'shotgun', 'birdie', 'mulligan', 'makeout', 'bird', 'wingman']
                    && request.resource.data.points is number
-                   && request.resource.data.points >= 1
-                   && request.resource.data.points <= 15
+                   && request.resource.data.points >= -5
+                   && request.resource.data.points <= 150
                    && request.resource.data.day is string
                    && request.resource.data.day.size() > 0
                    && request.resource.data.location is string
@@ -56,10 +56,10 @@ service cloud.firestore {
           && request.resource.data.comments is list
         ) || (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['drinkType', 'points', 'quantity'])
-          && request.resource.data.drinkType in ['beer', 'wine', 'shot', 'cocktail']
+          && request.resource.data.drinkType in ['beer', 'wine', 'shot', 'cocktail', 'shotgun', 'birdie', 'mulligan', 'makeout', 'bird', 'wingman']
           && request.resource.data.points is number
-          && request.resource.data.points >= 1
-          && request.resource.data.points <= 15
+          && request.resource.data.points >= -5
+          && request.resource.data.points <= 150
           && request.auth.uid == resource.data.userId
         )
       );

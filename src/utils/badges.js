@@ -16,15 +16,6 @@ function getDays(allDrinks) {
   return [...new Set(allDrinks.map(d => d.day).filter(Boolean))].sort()
 }
 
-// Build { [day]: pointsTotal } for a userId from allDrinks
-function pointsByDay(userId, allDrinks) {
-  const map = {}
-  allDrinks.forEach(d => {
-    if (d.userId === userId) map[d.day] = (map[d.day] || 0) + d.points
-  })
-  return map
-}
-
 // Returns the ranked userId array for a given day
 function rankForDay(day, allDrinks) {
   const totals = {}
@@ -36,13 +27,14 @@ function rankForDay(day, allDrinks) {
     .map(([uid]) => uid)
 }
 
-// Badge definitions — evaluated in priority order (highest first)
+// Badge definitions — Notre Dame Football Edition ☘️
 const BADGE_DEFS = [
+  // ── Legendary tier ──
   {
-    id: 'king_of_day',
-    emoji: '👑',
-    label: 'King of the Day',
-    description: 'Ranked #1 for the day',
+    id: 'touchdown_jesus',
+    emoji: '✝️',
+    label: 'Touchdown Jesus',
+    description: '#1 overall for the day — arms raised, untouchable',
     check(userId, userDrinks, allDrinks) {
       const days = getDays(allDrinks)
       return days.some(day => {
@@ -52,72 +44,52 @@ const BADGE_DEFS = [
     },
   },
   {
-    id: 'on_a_heater',
-    emoji: '🚀',
-    label: 'On a Heater',
-    description: '5+ drinks in a single day',
+    id: 'play_like_a_champion',
+    emoji: '🏆',
+    label: 'Play Like a Champion Today',
+    description: '20+ total points — you tapped the sign and meant it',
     check(userId, userDrinks) {
-      const byDay = {}
-      userDrinks.forEach(d => { byDay[d.day] = (byDay[d.day] || 0) + 1 })
-      return Object.values(byDay).some(c => c >= 5)
+      const total = userDrinks.reduce((sum, d) => sum + d.points, 0)
+      return total >= 20
     },
   },
   {
-    id: 'questionable_decisions',
-    emoji: '🥴',
-    label: 'Questionable Decisions',
-    description: '4+ drinks between midnight and 5am',
-    check(userId, userDrinks) {
-      const lateNight = userDrinks.filter(d => {
-        const h = localHour(d.createdAt)
-        return h >= 0 && h < 5
-      })
-      return lateNight.length >= 4
-    },
-  },
-  {
-    id: 'send_it',
-    emoji: '💥',
-    label: 'Send It',
-    description: '3 drinks within a 30-minute window',
+    id: 'four_horsemen',
+    emoji: '🐴',
+    label: 'The Four Horsemen',
+    description: '4 drinks in 4 consecutive hours — the original wrecking crew',
     check(userId, userDrinks) {
       const times = userDrinks.map(d => toMs(d.createdAt)).filter(t => t > 0).sort((a, b) => a - b)
-      const WINDOW = 30 * 60 * 1000
-      for (let i = 0; i <= times.length - 3; i++) {
-        if (times[i + 2] - times[i] <= WINDOW) return true
+      const WINDOW = 4 * 60 * 60 * 1000
+      for (let i = 0; i <= times.length - 4; i++) {
+        if (times[i + 3] - times[i] <= WINDOW) return true
       }
       return false
     },
   },
   {
-    id: 'hat_trick',
-    emoji: '🎩',
-    label: 'Hat Trick',
-    description: '3+ drinks in a single day',
+    id: 'win_one_for_the_gipper',
+    emoji: '🫡',
+    label: 'Win One for the Gipper',
+    description: 'Wingman assist — sacrificed your night for the boys',
     check(userId, userDrinks) {
-      const byDay = {}
-      userDrinks.forEach(d => { byDay[d.day] = (byDay[d.day] || 0) + 1 })
-      return Object.values(byDay).some(c => c >= 3)
+      return userDrinks.some(d => d.drinkType === 'wingman')
     },
   },
   {
-    id: 'climber',
-    emoji: '📈',
-    label: 'Climber',
-    description: 'Moved up 2+ spots in the last hour',
+    id: 'rudy',
+    emoji: '☘️',
+    label: 'Rudy! Rudy! Rudy!',
+    description: 'Came from behind — moved up 2+ spots in an hour',
     check(userId, userDrinks, allDrinks) {
       const oneHourAgo = Date.now() - 60 * 60 * 1000
       const days = getDays(allDrinks)
       return days.some(day => {
         const dayDrinks = allDrinks.filter(d => d.day === day)
         if (!dayDrinks.length) return false
-
-        // Current rank
         const currentRanked = rankForDay(day, allDrinks)
         const currentRank = currentRanked.indexOf(userId)
         if (currentRank === -1) return false
-
-        // Rank 1hr ago (exclude recent drinks)
         const oldTotals = {}
         dayDrinks.forEach(d => {
           if (toMs(d.createdAt) < oneHourAgo) {
@@ -127,16 +99,37 @@ const BADGE_DEFS = [
         const oldRanked = Object.entries(oldTotals).sort((a, b) => b[1] - a[1]).map(([uid]) => uid)
         const oldRank = oldRanked.indexOf(userId)
         if (oldRank === -1) return false
-
         return (oldRank - currentRank) >= 2
       })
     },
   },
+
+  // ── Bonus reps ──
   {
-    id: 'first_blood',
-    emoji: '🩸',
-    label: 'First Blood',
-    description: 'First drink logged on any event day',
+    id: 'the_leprechaun',
+    emoji: '💋',
+    label: 'The Leprechaun',
+    description: 'Dance floor makeout — got lucky, Irish-style',
+    check(userId, userDrinks) {
+      return userDrinks.some(d => d.drinkType === 'makeout')
+    },
+  },
+  {
+    id: 'golden_dome',
+    emoji: '🐣',
+    label: 'Under the Golden Dome',
+    description: 'Brought a bird home — the golden dome shines tonight',
+    check(userId, userDrinks) {
+      return userDrinks.some(d => d.drinkType === 'bird')
+    },
+  },
+
+  // ── Game-day drinking ──
+  {
+    id: 'notre_dame_stadium',
+    emoji: '🏟️',
+    label: 'The House That Rockne Built',
+    description: 'First drink logged on any day — opened the stadium',
     check(userId, userDrinks, allDrinks) {
       const days = getDays(allDrinks)
       return days.some(day => {
@@ -148,19 +141,35 @@ const BADGE_DEFS = [
     },
   },
   {
-    id: 'proof',
-    emoji: '📸',
-    label: 'Proof or It Didn\'t Happen',
-    description: 'Logged a drink with a photo',
+    id: 'no_huddle',
+    emoji: '💥',
+    label: 'No Huddle Offense',
+    description: '3 drinks within 30 minutes — tempo, tempo, tempo',
     check(userId, userDrinks) {
-      return userDrinks.some(d => d.imageUrl && d.imageUrl.length > 0)
+      const times = userDrinks.map(d => toMs(d.createdAt)).filter(t => t > 0).sort((a, b) => a - b)
+      const WINDOW = 30 * 60 * 1000
+      for (let i = 0; i <= times.length - 3; i++) {
+        if (times[i + 2] - times[i] <= WINDOW) return true
+      }
+      return false
     },
   },
   {
-    id: 'golden_hour',
+    id: 'knute_rockne',
+    emoji: '🎩',
+    label: 'Knute Rockne',
+    description: '3+ drinks in a day — a legendary game plan',
+    check(userId, userDrinks) {
+      const byDay = {}
+      userDrinks.forEach(d => { byDay[d.day] = (byDay[d.day] || 0) + 1 })
+      return Object.values(byDay).some(c => c >= 3)
+    },
+  },
+  {
+    id: 'irish_guard',
     emoji: '🌇',
-    label: 'Golden Hour',
-    description: 'Drink logged between 5pm and 7pm',
+    label: 'Irish Guard',
+    description: 'Drink during golden hour (5–7pm) — standing tall at sunset',
     check(userId, userDrinks) {
       return userDrinks.some(d => {
         const h = localHour(d.createdAt)
@@ -169,15 +178,58 @@ const BADGE_DEFS = [
     },
   },
   {
-    id: 'night_owl',
-    emoji: '🦉',
-    label: 'Night Owl',
-    description: 'Drink logged between midnight and 5am',
+    id: 'overtime',
+    emoji: '🌙',
+    label: 'Overtime',
+    description: 'Still going between midnight and 5am — the game ain\'t over',
     check(userId, userDrinks) {
       return userDrinks.some(d => {
         const h = localHour(d.createdAt)
         return h >= 0 && h < 5
       })
+    },
+  },
+  {
+    id: 'targeting',
+    emoji: '🥴',
+    label: 'Targeting (Ejection Pending)',
+    description: '4+ drinks between midnight and 5am — under review by the booth',
+    check(userId, userDrinks) {
+      const lateNight = userDrinks.filter(d => {
+        const h = localHour(d.createdAt)
+        return h >= 0 && h < 5
+      })
+      return lateNight.length >= 4
+    },
+  },
+  {
+    id: 'walk_on',
+    emoji: '📸',
+    label: 'Walk-On',
+    description: 'Logged your first drink — you made the roster',
+    check(userId, userDrinks) {
+      return userDrinks.some(d => d.imageUrl && d.imageUrl.length > 0)
+    },
+  },
+  {
+    id: 'five_star',
+    emoji: '⭐',
+    label: '5-Star Recruit',
+    description: '5+ drinks in a single day — top prospect in the nation',
+    check(userId, userDrinks) {
+      const byDay = {}
+      userDrinks.forEach(d => { byDay[d.day] = (byDay[d.day] || 0) + 1 })
+      return Object.values(byDay).some(c => c >= 5)
+    },
+  },
+  {
+    id: 'the_shirt',
+    emoji: '👕',
+    label: 'The Shirt',
+    description: '10+ total points — you\'re officially part of the gameday tradition',
+    check(userId, userDrinks) {
+      const total = userDrinks.reduce((sum, d) => sum + d.points, 0)
+      return total >= 10
     },
   },
 ]
